@@ -23,9 +23,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import click
 import collections
 import logging
-import argparse
 import io
 import yaml
 import time
@@ -530,17 +530,6 @@ class UjiNew(object):
             run = self.run.replace(' ', '\u00A0').replace('-', '\u2212')
             self.path = Path(directory) / run
 
-    @classmethod
-    def add_arguments(cls, parent_parser):
-        p = parent_parser.add_parser('new', help='Instantiate a new test record')
-        p.add_argument('template', type=str, help='Path to template file')
-        p.add_argument('directory', type=str, nargs='?', help='Path to new directory')
-        p.set_defaults(func=UjiNew.execute)
-
-    @classmethod
-    def execute(cls, args):
-        UjiNew(args.template, args.directory).generate()
-
     def __init__(self, filename, target_directory):
         assert filename
 
@@ -771,38 +760,39 @@ class UjiNew(object):
                     self.repo.index.add([os.fspath(c.path)])
 
 
-class Uji(object):
-    def __init__(self):
-        pass
+##########################################
+#               The CLI interface        #
+##########################################
 
-    def run(self, args):
-        parser = argparse.ArgumentParser(description='Generate a test case template')
-        parser.add_argument('--verbose', '-v', action='count', default=0, help='Increase debugging output')
-        subparsers = parser.add_subparsers(title='Commands', help='Available sub-commands')
+# top-level command
+@click.group()
+@click.option('-v', '--verbose', count=True, help='increase verbosity')
+@click.option('--quiet', 'verbose', flag_value=0)
+def uji(verbose):
+    verbose_levels = {
+        0: logging.ERROR,
+        1: logging.INFO,
+        2: logging.DEBUG,
+    }
 
-        # Add the sub commands
-        UjiNew.add_arguments(subparsers)
-
-        args = parser.parse_args(args)
-
-        verbose_levels = {
-            0: logging.ERROR,
-            1: logging.INFO,
-            2: logging.DEBUG,
-        }
-
-        logger.setLevel(verbose_levels.get(args.verbose, 2))
-        if not hasattr(args, 'func'):
-            print('Missing subcommand. Use --help', file=sys.stderr)
-            sys.exit(1)
-        args.func(args)
+    logger.setLevel(verbose_levels.get(verbose, 2))
+    # all the actual work is done in the subcommands
 
 
-def main():
+# subcommand: uji new
+@uji.command()
+@click.argument('template', type=click.Path())
+@click.argument('directory', required=False, type=click.Path())
+def new(template, directory):
+    '''Create a new test log directory from a template'''
     try:
-        Uji().run(sys.argv[1:])
+        UjiNew(template, directory).generate()
     except YamlError as e:
         logger.critical(f'Failed to parse YAML file: {e}')
+
+
+def main(args=sys.argv):
+    uji()
 
 
 if __name__ == '__main__':
