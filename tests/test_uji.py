@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+from click.testing import CliRunner
 import pytest
 import os
-from uji import Uji
-from textwrap import dedent
+import git
+import uji
 from pathlib import Path
+
 
 @pytest.fixture
 def datadir():
@@ -13,5 +15,9 @@ def datadir():
 
 
 def test_uji_example(datadir):
-    Uji().run(['new', os.fspath(Path(datadir) / 'example.yaml')])
-
+    args = ['new', os.fspath(Path(datadir) / 'example.yaml')]
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        git.Repo.init('.')
+        result = runner.invoke(uji.uji, args)
+        assert result.exit_code == 0
