@@ -1,0 +1,141 @@
+# Top-level YAML entries must contain a type: tag
+# that specifies the type of the entry.
+#
+# The actor type is an entity that a test is performed on.
+# Allowed subkeys:
+#    extends: inherit all from the referenced section
+#    name: a human-readable name for the entity
+#    description: a longer description for human consumption
+#    tags: a dictionary of key: value that can be used to filter on
+#          value must not be a list/dict
+#  
+# The test type is a description of a test that may produce log files.
+# Allowed subkeys:
+#    extends: inherit all from the referenced section
+#    name: a human-readable name for the test
+#    description: a longer description for human consumption
+#    filter: a dictionary to filter on. All keys+values of the actor must
+#            match the entries in this dictionary.
+#            The value must be a list, even if it's just one entry
+#            Where the filter tag is missing, this test is assumed
+#            to be run only once.
+#    tests: a list of instruction strings describing the tests to be
+#           performed.
+#    files: a list of files to collect
+#    commands: a list of commands to run, each command has two keys:
+#       run: the command to invoke
+#       description: a description for human consumption
+#       output: {single|multi|attach|exitcode|human}
+#         value 'single' (default): the output is a single line
+#         value 'multi': the output is multiple lines
+#         value 'attach': the output should be attached as file
+#         value 'exitcode': the output is the exit code of the command
+#         value 'human': the output depends on human-interpretation
+version: 1
+  
+generic_laptop_keyboard:
+  type: actor
+  name: AT Translated Keyboard
+  description: the PS/2 thing with keys as found in laptops
+  # tags is a dictionary of entries that the tests can later be filtered on
+  # The keys are free-form.
+  tags:
+    bus: PS/2
+
+# inherits everything from above but overwrites the tags
+generic_usb_keyboard:
+  extends: generic_laptop_keyboard
+  name: External USB Keyboard
+  description: A USB keyboard
+  tags:
+    bus: USB
+
+
+# A set of test instructions. The filter argument
+# means this will be applied to anything with a bus of USB and/or PS/2.
+test_keyboard:
+  type: test
+  filter:
+    bus:
+      - PS/2
+      - USB
+  tests:
+    - make sure we can type keys
+    - kbd LEDs
+
+test_usb_keyboards:
+  type: test
+  filter:
+    bus: USB
+  tests:
+    - plug and unplug the keyboard
+
+test_general:
+  type: test
+  name: General
+  tests:
+    - hid-tools test suite
+
+test_system:
+  type: test
+  name: System Sanity Checks
+  tests:
+    - kernel not tainted on boot
+
+test_hotplug:
+  type: test
+  filter:
+    # special value __any__ means any value for that key
+    bus: [__any__]
+  tests:
+    - unplugging shows `DEVICE_ADDED`/`DEVICE_REMOVED` events
+  logs:
+      commands:
+        - run: dmesg
+          output: attach
+          description: collect dmesg after plug/unplug
+
+test_usb_logs:
+  type: test
+  filter:
+    bus: [USB]
+  tests:
+    - check lsusb after plugin
+  logs:
+    commands:
+      - run: lsusb -v
+        output: attach
+
+# A test without a 'tests' entry just collects logs
+log_input_devices:
+  type: test
+  logs:
+      files:
+        - /proc/bus/input/devices
+      commands:
+        - run: evtest
+          output: attach
+
+log_version:
+  type: test
+  logs:
+      commands:
+        - run: my-command --version
+          output: single
+
+log_some_check:
+  type: test
+  logs:
+      files:
+        - /path/to/testsuite.output
+      commands:
+        - run: some-command
+          output: exitcode
+
+log_gtk:
+  type: test
+  logs:
+      commands:
+        - run: gnome-control-center
+          output: human
+          description: check scrolling works in the test area

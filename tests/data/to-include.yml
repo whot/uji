@@ -1,0 +1,6 @@
+version: 1
+
+one:
+    two: three
+    four: five
+    six: [7, 8]

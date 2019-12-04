@@ -1,0 +1,4 @@
+foo:
+    bar: baz
+
+include: to-include.yml
