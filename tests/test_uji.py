@@ -2,7 +2,7 @@
 
 import pytest
 import os
-from uji.uji import Uji
+from uji import Uji
 from textwrap import dedent
 from pathlib import Path
 

@@ -67,13 +67,13 @@ setup(name='uji',
       long_description=open('README.md', 'r').read(),
       long_description_content_type='text/markdown',
       url='http://github.com/whot/uji',
-      packages=['uji'],
       author='The uji authors',
       author_email='check.the.git@history',
       license='MIT',
+      py_modules=['uji'],
       entry_points={
           'console_scripts': [
-              'uji = uji.uji:main',
+              'uji = uji:main',
           ]
       },
       classifiers=[

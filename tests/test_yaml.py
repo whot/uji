@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import pytest
-from uji.uji import ExtendedYaml, YamlError
+from uji import ExtendedYaml, YamlError
 from textwrap import dedent
 from pathlib import Path
 
