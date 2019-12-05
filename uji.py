@@ -305,6 +305,161 @@ class ExtendedYaml(UserDict):
         return yml
 
 
+class MarkdownError(Exception):
+    pass
+
+
+class MarkdownParser(object):
+    '''
+    A minimal parser for markdown, custom-tailored to what we need in uji
+    which is: sections, lines and checkboxes.
+    '''
+    class AST(object):
+        def __init__(self):
+            self.sections = []
+
+    class Section(object):
+        def __init__(self, line):
+            self.line = line
+            self.text = line.text
+            self.marker = None
+            self.parent = None
+            self.children = []
+            self.lines = []
+
+        def add_child(self, child):
+            child.parent = self
+            self.children.append(child)
+
+        @classmethod
+        def from_line(cls, line, next_line, last_section):
+            section = cls(line)
+
+            # header style ## foo
+            if line.text.startswith('#'):
+                level = 1
+                while line.text.startswith('#' * level):
+                    level += 1
+                level -= 1
+                section.level = level
+                section.marker = '#' * level
+                section.text = line.text[level:].strip()  # remove ## prefix
+
+                parent = last_section
+                while parent:
+                    if section.level > parent.level:
+                        parent.add_child(section)
+                        break
+                    else:
+                        parent = parent.parent
+            else:
+                # header style
+                # foo
+                # ===
+                # at least 3 characters but strict underlining is not
+                # required
+                header_chars = ['-', '_', '=', '.', ':']
+                first = next_line.text[0]
+                if first not in header_chars:
+                    return None
+
+                length = len(next_line.text)
+                if length < 3 or next_line.text != first * length:
+                    return None
+
+                # we have an underlined line
+                section.text = line.text
+                section.marker = first
+                parent = last_section
+                while parent:
+                    if parent.marker == section.marker:  # found a sibling
+                        if parent.parent:
+                            parent.parent.add_child(section)
+                            section.level = parent.parent.level + 1
+                        else:  # top-level section
+                            section.level = 1
+                        break
+                    else:
+                        # Need to search all parents for a matching
+                        # underline
+                        parent = parent.parent
+                else:
+                    # we couldnt't find a parent with the same underlining,
+                    # so we have no siblings. This is either a top-level
+                    # section or a level below our current parent
+                    if last_section:
+                        last_section.add_child(section)
+                        section.level = last_section.level + 1
+                    else:
+                        section.level = 1
+
+            logger.debug(repr(section))
+            return section
+
+        def __str__(self):
+            return self.text
+
+        def __repr__(self):
+            return f'Section lvl {self.level}: "{self.text}", parent {self.parent.text if self.parent else "<none>"}'
+
+    class Line(object):
+        def __init__(self, lineno, text):
+            text = text.replace('\n', '')
+            self.lineno = lineno
+            self.text = text
+            self.section = None
+
+        def __str__(self):
+            return self.text
+
+        def __repr__(self):
+            return f'{self.lineno}: {self.text}'
+
+    def __init__(self, fd):
+        self.lines = [MarkdownParser.Line(lineno, text) for (lineno, text) in enumerate(fd.readlines())]
+        if not self.lines:
+            raise MarkdownError('Empty markdown file')
+        self.tree = self._parse(self.lines)
+
+    def _parse(self, lines):
+        tree = MarkdownParser.AST()
+
+        section = None  # Current section
+        for l1, l2 in zip(lines, lines[1:]):
+            if l1.text.startswith('#'):
+                section = MarkdownParser.Section.from_line(l1, l2, last_section=section)
+                if not section.parent:
+                    tree.sections.append(section)
+            elif l1.text and l2.text:
+                new_section = MarkdownParser.Section.from_line(l1, l2, last_section=section)
+                if new_section:
+                    section = new_section
+                    if not new_section.parent:
+                        tree.sections.append(section)
+            l1.section = section
+
+        # zip means we skip over the last line so it has to be handled
+        # manually
+        if lines[-1].text.startswith('#'):
+            raise MarkdownError('Header on last line is not supported')
+        lines[-1].section = section
+
+        for l in lines:
+            if l.section:
+                l.section.lines.append(l)
+
+        return tree
+
+    @classmethod
+    def from_file(self, filename):
+        with open(filename) as fd:
+            return MarkdownParser(fd)
+
+    @classmethod
+    def from_text(self, text):
+        return MarkdownParser(io.StringIO(text))
+
+
 class MarkdownFormatter(object):
     '''
     A formatter object to produce GitLab-compatible markdown.
