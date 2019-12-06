@@ -83,6 +83,12 @@ generic_usb_keyboard:
   tags:
     bus: USB
 
+amd_picasso:
+  type: actor
+  name: AMD
+  tags:
+    vendor: amd
+    type: videocard
 
 # A set of test instructions. The filter argument
 # means this will be applied to anything with a bus of USB and/or PS/2.
@@ -172,3 +178,39 @@ log_gtk:
         - run: gnome-control-center
           output: human
           description: check scrolling works in the test area
+
+
+test_suspend_resume:
+  type: test
+  name: Normal suspend/resume test
+  filter:
+    type: videocard
+  description: |
+    This test checks behavior of a **normal** suspend/resume cycle.
+
+    Setup:
+    - suspend the machine
+    - resume the machine
+    Machine must be connected to power during this test.
+  tests:
+    - machine must not freeze or crash
+    - all monitors (including dock) turn back on on resume
+    - dmesg is free of obvious errors or warnings
+  logs:
+    commands:
+    - run: dmesg
+
+test_hotplug_video:
+  type: test
+  name: Video card hotplugging test
+  filter:
+    type: videocard
+  description: |
+    Setup:
+    - machine must be connected to power
+    - put on a rubber suit and rubber gloves
+    - rip the card out of the machine
+    - extinguish any fire caused by the sparks
+  tests:
+    - machine has shut down
+    - building is on fire
