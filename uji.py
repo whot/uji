@@ -37,7 +37,42 @@ from pathlib import Path
 
 from collections import UserDict
 
-logger = logging.getLogger('testtmpl')
+
+class ColorFormatter(logging.Formatter):
+    BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, LIGHT_GRAY = range(30, 38)
+    DARK_GRAY, LIGHT_RED, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_BLUE, LIGHT_MAGENTA, LIGHT_CYAN, WHITE = range(90, 98)
+    COLORS = {
+        'WARNING': LIGHT_RED,
+        'INFO': LIGHT_GREEN,
+        'DEBUG': LIGHT_GRAY,
+        'CRITICAL': YELLOW,
+        'ERROR': RED,
+    }
+    RESET_SEQ = '\033[0m'
+    COLOR_SEQ = '\033[%dm'
+    BOLD_SEQ = '\033[1m'
+
+    def __init__(self, *args, **kwargs):
+        logging.Formatter.__init__(self, *args, **kwargs)
+
+    def format(self, record):
+        levelname = record.levelname
+        color = self.COLOR_SEQ % (self.COLORS[levelname])
+        message = logging.Formatter.format(self, record)
+        message = message.replace('$RESET', self.RESET_SEQ)\
+                         .replace('$BOLD', self.BOLD_SEQ)\
+                         .replace('$COLOR', color)
+        for k, v in self.COLORS.items():
+            message = message.replace('$' + k, self.COLOR_SEQ % (v + 30))
+        return message + self.RESET_SEQ
+
+
+log_format = '$COLOR%(levelname)s: %(message)s'
+logger_handler = logging.StreamHandler()
+logger_handler.setFormatter(ColorFormatter(log_format))
+logger = logging.getLogger('uji')
+logger.addHandler(logger_handler)
+logger.setLevel(logging.INFO)
 
 
 class YamlError(Exception):
@@ -669,14 +704,13 @@ class UjiNew(object):
 @click.option('--quiet', 'verbose', flag_value=-1)
 def uji(verbose):
     levels = {
-        None: logging.WARNING,
-        2: logging.DEBUG,
-        1: logging.INFO,
+        None: logging.INFO,
+        1: logging.DEBUG,
+        0: logging.INFO,
         -1: logging.ERROR,
-        0: logging.WARNING,
     }
 
-    logging.basicConfig(level=levels.get(verbose, logging.DEBUG))
+    logger.setLevel(levels.get(verbose, logging.DEBUG))
     # all the actual work is done in the subcommands
 
 # subcommand: uji new
@@ -688,7 +722,7 @@ def new(template, directory):
     try:
         UjiNew(template, directory).generate()
     except YamlError as e:
-        logging.critical(f'Failed to parse YAML file: {e}')
+        logger.critical(f'Failed to parse YAML file: {e}')
 
 
 def main(args=sys.argv):
