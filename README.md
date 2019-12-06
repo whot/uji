@@ -1,5 +1,5 @@
-Uji - todo list generator
-=========================
+Uji - todo list generator and tracking system
+=============================================
 
 uji is a tool to generate 'todo lists' from template files and hold on to
 those lists forever or until the cows come home, whichever happens later.
@@ -9,6 +9,22 @@ this?"
 
 - uji is not a todo list
 - uji is not a test suite
+- uji is not something you can integrate into a CI
+
+If you have a test that can be automated, uji is not the right tool. uji
+is to track manual tests that cannot be automated. If you want to generate
+test summaries, uji is not the right tool. uji tracks **manual** tests.
+
+uji is optimized for writing, not reading. 99% of the logs tracked with uji
+will never be read. Hence uji is built for minimal friction to write the
+tests - basically you need git, python and an editor. The central file is
+a markdown text file that you can edit and annotate (almost) at will.
+It's all stored in git, so backup, sharing, and collaboration is trivial.
+It's markdown, so you push the file anywhere (gitlab, github, ...) and it'll
+probably look nice in the browser.
+
+uji just preps the file for you and (in the future) provides a set of
+CLI tools to automate some tasks around maintaining the test files.
 
 Use case
 ========
