@@ -688,7 +688,7 @@ def new(template, directory):
     try:
         UjiNew(template, directory).generate()
     except YamlError as e:
-        logger.critical(f'Failed to parse YAML file: {e}')
+        logging.critical(f'Failed to parse YAML file: {e}')
 
 
 def main(args=sys.argv):
