@@ -514,6 +514,9 @@ class MarkdownFormatter(object):
     def fprint(self, text):
         print(text, file=self.fd)
 
+    def br(self):
+        self.fprint('')
+
     def h1(self, text):
         self.fprint(text)
         self.fprint('=' * len(text))
@@ -523,8 +526,7 @@ class MarkdownFormatter(object):
         self.fprint('-' * len(text))
 
     def h3(self, text):
-        self.fprint(text)
-        self.fprint('.' * len(text))
+        self.fprint(f'### {text}')
 
     def hr(self):
         self.fprint('---')
@@ -852,6 +854,10 @@ class UjiNew(object):
     def _print_tests(self, actor):
         with self.fmt.checkbox_list() as cb:
             for test in actor.tests:
+                if test.description:
+                    self.fmt.br()
+                    self.fmt.h3(test.name)
+                    self.fmt.p(test.description)
                 for instruction in test.tests:
                     cb.checkbox(instruction)
                     logger.debug(f'{actor.id}.{test.id} - {instruction}')
@@ -928,17 +934,26 @@ class UjiTest(cmd.Cmd):
         self.dirty = False  # Writeout needed?
 
     def _compile_tests(self, section):
-        lines = section.lines
         tests = collections.OrderedDict()
 
-        idx = 0
-        for line in lines:
-            if (not line.text.startswith('- [ ]') and
-                    not line.text.lower().startswith('- [x]')):
-                continue
-            tests[idx] = line
-            line.test_idx = idx
-            idx += 1
+        def find_tests(section, tests, idx=0):
+            lines = section.lines
+
+            for line in lines:
+                if not line.is_checkbox:
+                    continue
+                tests[idx] = line
+                line.test_idx = idx
+                idx += 1
+            return idx
+
+        # FIXME: This currently goes two sections deep, anything below h3
+        # won't be picked up. Needs to be addressed once the markdown file
+        # format has been sorted out.
+        idx = find_tests(section, tests)
+        for subsection in section.children:
+            idx = find_tests(subsection, tests, idx)
+
         return tests
 
     def do_exit(self, args):
