@@ -965,6 +965,19 @@ class UjiTest(cmd.Cmd):
         '''Exit uji'''
         return self.do_exit(args)
 
+    def do_diff(self, args=None):
+        '''
+        Usage: diff [md]
+
+        Show currently staged changes. If the literal 'md' is given,
+        only the changes to the Markdown file are shown.
+        '''
+
+        if args == 'md':
+            print(self.repo.git.diff('HEAD', '--staged', self.mdfile))
+        else:
+            print(self.repo.git.diff('HEAD', ['--staged']))
+
     def do_commit(self, args):
         '''
         Usage: commit "the commit message"
