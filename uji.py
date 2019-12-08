@@ -389,8 +389,8 @@ class UjiNew(object):
 
         @classmethod
         def default_actor(cls):
-            actor = {'name': 'General'}
-            return UjiNew.Actor('general', actor)
+            actor = {'name': 'Generic'}
+            return UjiNew.Actor('generic', actor)
 
         def __str__(self):
             return f'UjiNew.Actor: {self.id} - {self.name}: tags {self.tags}'
