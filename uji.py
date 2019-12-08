@@ -472,8 +472,6 @@ class UjiNew(object):
         if target_directory is None:
             target_directory = self._find_dirname(Path(filename).stem)
 
-        logger.debug(f'target directory is: {target_directory}')
-        Path(target_directory).mkdir()
         self.target_directory = target_directory
 
     def _find_dirname(self, prefix):
@@ -494,6 +492,10 @@ class UjiNew(object):
         logger.debug(f'Loading template file "{self.filename}"')
         self.yaml = ExtendedYaml.load_from_file(self.filename)
         self._validate()
+
+        logger.debug(f'target directory is: {self.target_directory}')
+        Path(self.target_directory).mkdir()
+
         self._process()
 
         # save the combined yaml file
