@@ -531,6 +531,9 @@ class UjiNew(object):
             if not isinstance(data, dict):
                 raise YamlError(f'Section {section} must be a dictionary')
 
+            if section == 'file':
+                continue
+
             if not data.get('type'):
                 raise YamlError(f'Section {section} does not have a type')
 
@@ -567,6 +570,9 @@ class UjiNew(object):
         tests = []
 
         for section, sdata in self.yaml.items():
+            if section == 'file':
+                continue
+
             stype = sdata['type']
             if stype == 'actor':
                 self.actors[section] = UjiNew.Actor(section, sdata)
@@ -622,6 +628,12 @@ class UjiNew(object):
     def _write_md_file(self):
         self.fmt = MarkdownFormatter(self.output)
         self.fmt.h1('Uji')
+
+        # FIXME: this is not ideal when we have multiple includes, it'll all
+        # be jambled up in the wrong order. Remains to be seen whether
+        # that's an issue.
+        for key, content in self.yaml.get('file', {}).items():
+            self.fmt.p(content)
 
         for _, actor in self.actors.items():
             self.fmt.h2(actor.name)

@@ -12,6 +12,9 @@ uji test generally parses gitlab-compatible markdown.
 There **must** be a top-level section named Uji. That is the only section
 uji test looks at for data.
 
+The content of this section is what is described in the section(s)
+ `file:` of the yaml file(s).
+
 Generic
 -------
 
