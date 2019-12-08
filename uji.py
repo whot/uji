@@ -621,7 +621,7 @@ class UjiNew(object):
 
     def _write_md_file(self):
         self.fmt = MarkdownFormatter(self.output)
-        self.fmt.h1('Test Cases')
+        self.fmt.h1('Uji')
 
         for _, actor in self.actors.items():
             self.fmt.h2(actor.name)
