@@ -1,0 +1,144 @@
+amd_picasso:
+  name: AMD
+  tags:
+    type: videocard
+    vendor: amd
+  type: actor
+file:
+  example.yaml: 'This is an example yaml file. The text here is used as the file
+
+    description in the generated markdown file.
+
+    '
+generic_laptop_keyboard:
+  description: the PS/2 thing with keys as found in laptops
+  name: AT Translated Keyboard
+  tags:
+    bus: PS/2
+  type: actor
+generic_usb_keyboard:
+  description: A USB keyboard
+  name: External USB Keyboard
+  tags:
+    bus: USB
+  type: actor
+log_gtk:
+  logs:
+    commands:
+    - description: check scrolling works in the test area
+      output: human
+      run: gnome-control-center
+  type: test
+log_input_devices:
+  logs:
+    commands:
+    - output: attach
+      run: evtest
+    files:
+    - /proc/bus/input/devices
+  type: test
+log_some_check:
+  logs:
+    commands:
+    - output: exitcode
+      run: some-command
+    files:
+    - /path/to/testsuite.output
+  type: test
+log_version:
+  logs:
+    commands:
+    - output: single
+      run: my-command --version
+  type: test
+test_general:
+  name: General
+  tests:
+  - hid-tools test suite
+  type: test
+test_hotplug:
+  filter:
+    bus:
+    - __any__
+  logs:
+    commands:
+    - description: collect dmesg after plug/unplug
+      output: attach
+      run: dmesg
+  tests:
+  - unplugging shows `DEVICE_ADDED`/`DEVICE_REMOVED` events
+  type: test
+test_hotplug_video:
+  description: 'Setup:
+
+    - machine must be connected to power
+
+    - put on a rubber suit and rubber gloves
+
+    - rip the card out of the machine
+
+    - extinguish any fire caused by the sparks
+
+    '
+  filter:
+    type: videocard
+  name: Video card hotplugging test
+  tests:
+  - machine has shut down
+  - building is on fire
+  type: test
+test_keyboard:
+  filter:
+    bus:
+    - PS/2
+    - USB
+  tests:
+  - make sure we can type keys
+  - kbd LEDs
+  type: test
+test_suspend_resume:
+  description: 'This test checks behavior of a **normal** suspend/resume cycle.
+
+
+    Setup:
+
+    - suspend the machine
+
+    - resume the machine
+
+    Machine must be connected to power during this test.
+
+    '
+  filter:
+    type: videocard
+  logs:
+    commands:
+    - run: dmesg
+  name: Normal suspend/resume test
+  tests:
+  - machine must not freeze or crash
+  - all monitors (including dock) turn back on on resume
+  - dmesg is free of obvious errors or warnings
+  type: test
+test_system:
+  name: System Sanity Checks
+  tests:
+  - kernel not tainted on boot
+  type: test
+test_usb_keyboards:
+  filter:
+    bus: USB
+  tests:
+  - plug and unplug the keyboard
+  type: test
+test_usb_logs:
+  filter:
+    bus:
+    - USB
+  logs:
+    commands:
+    - output: attach
+      run: lsusb -v
+  tests:
+  - check lsusb after plugin
+  type: test
