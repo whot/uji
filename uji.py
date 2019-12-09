@@ -354,22 +354,21 @@ class MarkdownParser(object):
                         parent = parent.parent
             else:
                 # header style
-                # foo
-                # ===
+                #   foo
+                #   ===
                 # at least 3 characters but strict underlining is not
                 # required
-                header_chars = ['-', '_', '=', '.', ':']
-                first = next_line.text[0]
-                if first not in header_chars:
+                twolines = '\n'.join([line.text, next_line.text])
+                match = re.match('^(.*)\n([-_=.:]{3,})', twolines)
+                if not match:
                     return None
 
-                length = len(next_line.text)
-                if length < 3 or next_line.text != first * length:
-                    return None
-
-                # we have an underlined line
-                section.text = line.text
-                section.marker = first
+                section.text = match[1]
+                section.marker = match[2][0]
+                # annoying: markdown doesn't specify which header style
+                # is h1, h2, etc. So the only way we can know is by
+                # running up the tree, if we have the same there it'll
+                # be a sibling.
                 parent = last_section
                 while parent:
                     if parent.marker == section.marker:  # found a sibling
