@@ -25,7 +25,7 @@ def test_md_load():
 
 def test_md_sections_hash():
     data = dedent('''\
-                  ## h1
+                  ## h2
 
                   foo
 

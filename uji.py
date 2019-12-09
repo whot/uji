@@ -339,14 +339,11 @@ class MarkdownParser(object):
             section = cls(line)
 
             # header style ## foo
-            if line.text.startswith('#'):
-                level = 1
-                while line.text.startswith('#' * level):
-                    level += 1
-                level -= 1
-                section.level = level
-                section.marker = '#' * level
-                section.text = line.text[level:].strip()  # remove ## prefix
+            match = re.match('^(#+) (.*)', line.text)
+            if match:
+                section.level = len(match[1])
+                section.marker = match[1]
+                section.text = match[2]
 
                 parent = last_section
                 while parent:
