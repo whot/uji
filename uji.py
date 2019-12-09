@@ -660,7 +660,7 @@ class MarkdownFormatter(object):
 
         def _checkbox(self, text, indent=0, symbol='⍿'):
             spaces = " " * indent * 2
-            self.parent.fprint(f'{spaces}- [ ] {symbol} {text}')
+            self.parent.fprint(f'{spaces}- [ ] {text}')
 
         def checkbox(self, text, indent=0):
             self._checkbox(text, indent)
