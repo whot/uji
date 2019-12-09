@@ -80,6 +80,11 @@ logger.setLevel(logging.INFO)
 def bold(text):
     return f'{ColorFormatter.BOLD_SEQ}{text}{ColorFormatter.RESET_SEQ}'
 
+def red(text):
+    return f'{ColorFormatter.COLOR_SEQ % ColorFormatter.RED}{text}{ColorFormatter.RESET_SEQ}'
+
+def green(text):
+    return f'{ColorFormatter.COLOR_SEQ % ColorFormatter.GREEN}{text}{ColorFormatter.RESET_SEQ}'
 
 class YamlError(Exception):
     pass
@@ -444,6 +449,14 @@ class MarkdownParser(object):
             path = match[2]
             return filename, path
 
+        @property
+        def pretty_text(self):
+            link, path = self.link
+            if not link:
+                return self.text
+            else:
+                x = 'x' if self.checked else ' '
+                return f'- [{x}] {link}'
 
     class Section(Node):
         def __init__(self, line, parent=None):
@@ -1139,7 +1152,7 @@ class UjiTest(cmd.Cmd):
 
         print(f'Tests available:')
         for idx, t in self.tests.items():
-            print(f'[{idx}] {t.text}')
+            print(f'[{idx}] {t.pretty_text}')
         print(f'Switch to test N with "t N"')
 
     def do_test(self, args=None):
@@ -1156,7 +1169,7 @@ class UjiTest(cmd.Cmd):
                 return
 
         print(f'{bold("Current test:")}')
-        print(f'  {self.test.text}')
+        print(f'  {self.test.pretty_text}')
         print(f'Use "x" to mark as done')
         if "📎" in self.test.text:
             print(f'Use "u" to upload the file and mark as done')
