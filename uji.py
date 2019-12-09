@@ -798,10 +798,11 @@ class UjiNew(object):
         logger.debug(f'Loading template file "{self.filename}"')
         self.yaml = ExtendedYaml.load_from_file(self.filename)
         self._validate()
-        self._process()
 
-        logger.debug(f'target directory is: {target_directory}')
-        Path(target_directory).mkdir()
+        logger.debug(f'target directory is: {self.target_directory}')
+        Path(self.target_directory).mkdir()
+
+        self._process()
 
         # save the combined yaml file
         outfile = Path(self.target_directory) / self.filename
