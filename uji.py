@@ -77,6 +77,9 @@ logger = logging.getLogger('uji')
 logger.addHandler(logger_handler)
 logger.setLevel(logging.INFO)
 
+def bold(text):
+    return f'{ColorFormatter.BOLD_SEQ}{text}{ColorFormatter.RESET_SEQ}'
+
 
 class YamlError(Exception):
     pass
@@ -333,6 +336,7 @@ class MarkdownParser(object):
             self.lines = []
             self.parent = None
             self.children = []
+            self.type = None
 
         def add_child(self, child):
             child.parent = self
@@ -363,6 +367,7 @@ class MarkdownParser(object):
         def __init__(self, line, parent=None):
             super().__init__(line, parent)
             self.indent = 0
+            self.type = 'paragraph'
 
         @classmethod
         def handle_lines(cls, lines, node, section):
@@ -403,6 +408,7 @@ class MarkdownParser(object):
     class Checkbox(Node):
         def __init__(self, line, parent=None):
             super().__init__(line, parent)
+            self.type = 'checkbox'
 
         @classmethod
         def from_lines(cls, lines, section):
@@ -417,12 +423,35 @@ class MarkdownParser(object):
                 section.add_child(cb)
             return cb, [line], lines[1:]
 
+        @property
+        def checked(self):
+            return self.text[3] != ' '
+
+        @checked.setter
+        def checked(self, value):
+            match = re.match(r'^- \[[ xX]\] (.*)', self.text)
+            assert match is not None
+            x = 'x' if value else ' '
+            self.lines[0].text = f'- [{x}] {match[1]}'
+
+        @property
+        def link(self):
+            match = re.match(r'.* \[(.*)\]\((.*)\).*', self.text)
+            if not match:
+                return None, None
+
+            filename = re.sub(r'`?([^`]*)`?', r'\1', match[1])
+            path = match[2]
+            return filename, path
+
+
     class Section(Node):
         def __init__(self, line, parent=None):
             super().__init__(line)
             self.headline = line.text
             self.marker = None
             self.parent = None
+            self.type = 'section'
 
         @classmethod
         def from_lines(cls, lines, last_section):
@@ -489,7 +518,7 @@ class MarkdownParser(object):
             return section, lines[:used], lines[used:]
 
         def __str__(self):
-            return self.text
+            return self.headline
 
         def __repr__(self):
             return f'Section lvl {self.level}: "{self.text}", parent {self.parent if self.parent else "<none>"}'
@@ -500,7 +529,6 @@ class MarkdownParser(object):
             self.lineno = lineno
             self.text = text
             self.section = None
-            self.is_checkbox = re.match(r'- \[[ xX]{1}\] .*', text)
             self.is_attachment = '📎' in text
 
         def __str__(self):
@@ -508,23 +536,6 @@ class MarkdownParser(object):
 
         def __repr__(self):
             return f'{self.lineno}: {self.text}'
-
-        @property
-        def checked(self):
-            return self.is_checkbox and not self.text.startswith('- [ ]')
-
-        @checked.setter
-        def check(self, val):
-            if not self.is_checkbox:
-                raise ValueError('Cannot check a non-checkbox line')
-
-            if val:
-                prefix = f'- [x] '
-            else:
-                prefix = f'- [ ] '
-
-            # mmapp would be smarter...
-            self.text = f'{prefix}{self.text[len(prefix):]}'
 
         @property
         def attachment(self):
@@ -1007,26 +1018,29 @@ class UjiTest(cmd.Cmd):
         self.mdfile = md
         self.parser = MarkdownParser.from_file(md)
 
-        self.sections = collections.OrderedDict()  # a flattened list of all sections in the markdown
+        uji_section = [s for s in self.parser.tree.children if s.type == 'section' and s.headline == 'Uji']
+        if not uji_section:
+            raise ValueError('Unable to find top-level section "Uji" in the markdown file')
+        elif len(uji_section) != 1:
+            logger.warning('Multiple "Uji" sectionis found, using the first one')
+        uji_section = uji_section[0]
+
+        self.sections = collections.OrderedDict()
         idx = 0
-        for section in self.parser.tree.sections:
+        for section in uji_section.children:
+            if not section.type == 'section':
+                continue
+
             tests = self._compile_tests(section)
-            if tests:
+            if tests:  # skip over sections without tests
                 self.sections[idx] = section
                 section.section_idx = idx
                 idx += 1
-            for child in section.children:
-                tests = self._compile_tests(child)
-                if tests:
-                    self.sections[idx] = child
-                    child.section_idx = idx
-                    idx +=1
 
+        # for simplicity, select first test of first section
         self.section = self.sections[0]  # the currently selected test
         self.tests = self._compile_tests(self.section)
-
         self.test = self.tests[0]  # the currently selected test
-
         self.do_sections()
 
         self.dirty = False  # Writeout needed?
@@ -1035,13 +1049,12 @@ class UjiTest(cmd.Cmd):
         tests = collections.OrderedDict()
 
         def find_tests(section, tests, idx=0):
-            lines = section.lines
-
-            for line in lines:
-                if not line.is_checkbox:
+            for cb in section.children:
+                if not cb.type == 'checkbox':
                     continue
-                tests[idx] = line
-                line.test_idx = idx
+
+                tests[idx] = cb
+                cb.test_idx = idx
                 idx += 1
             return idx
 
@@ -1091,7 +1104,7 @@ class UjiTest(cmd.Cmd):
         '''List the sections in the file'''
 
         for idx, s in self.sections.items():
-            print(f'[{idx}] {s}')
+            print(f'[{idx}] {s.headline}')
         print(f'Current section is: [{self.section.section_idx}] {self.section}')
         print(f'Switch to section N with "s N"')
 
@@ -1117,9 +1130,16 @@ class UjiTest(cmd.Cmd):
 
         Lists the tests of the currently selected section.
         '''
-        print(f'Tests available in: {self.section}')
+        print(f'{bold(self.section)}')
+        print('')
+        for p in self.section.children:
+            if p.type != 'paragraph':
+                break
+            print(p.text)
+
+        print(f'Tests available:')
         for idx, t in self.tests.items():
-            print(f'[{idx}] {t}')
+            print(f'[{idx}] {t.text}')
         print(f'Switch to test N with "t N"')
 
     def do_test(self, args=None):
@@ -1135,8 +1155,8 @@ class UjiTest(cmd.Cmd):
                 print('Usage: test N where N is the index of the test')
                 return
 
-        print(f'Current test:')
-        print(f'  {self.test}')
+        print(f'{bold("Current test:")}')
+        print(f'  {self.test.text}')
         print(f'Use "x" to mark as done')
         if "📎" in self.test.text:
             print(f'Use "u" to upload the file and mark as done')
@@ -1150,12 +1170,10 @@ class UjiTest(cmd.Cmd):
         the filename from the markdown file is used.
         '''
 
-        # paperclip is the marker uji puts in for attachments
-        if "📎" not in self.test.text:
-            logger.error('Upload not supported in current test')
+        filename, path = self.test.link
+        if not filename:
+            logger.error('Cannot upload for current test')
             return
-
-        filename, path = self.test.attachment
 
         if args:
             filename = args
@@ -1178,10 +1196,7 @@ class UjiTest(cmd.Cmd):
 
         Mark the currently selected tests as done
         '''
-        if not self.test.is_checkbox:
-            raise NotImplementedError('Ooops, a test should always be a checkbox')
-
-        self.test.check = True
+        self.test.checked = True
         self.dirty = True
         self.do_next()
 
@@ -1191,10 +1206,7 @@ class UjiTest(cmd.Cmd):
 
         Unmark the currently selected test again
         '''
-        if not self.test.is_checkbox:
-            raise NotImplementedError('Ooops, a test should always be a checkbox')
-
-        self.test.check = False
+        self.test.checked = False
         self.dirty = True
         self.do_next()
 
