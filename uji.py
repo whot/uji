@@ -315,38 +315,130 @@ class MarkdownError(Exception):
 class MarkdownParser(object):
     '''
     A minimal parser for markdown, custom-tailored to what we need in uji
-    which is: sections, lines and checkboxes.
+    which is:
+    - sections, because we need those for grouping
+    - checkboxes, top-level only
+    - paragraphs, anything else
     '''
-    class AST(object):
-        def __init__(self):
-            self.sections = []
+    class Node(object):
+        '''
+        A single logical element.
 
-    class Section(object):
-        def __init__(self, line):
-            self.line = line
-            self.text = line.text
-            self.marker = None
+        .. attribute:: lines
+
+           The Lines attached to this node, excluding those attached to the
+           children nodes.
+        '''
+        def __init__(self, line, parent=None):
+            self.lines = []
             self.parent = None
             self.children = []
-            self.lines = []
 
         def add_child(self, child):
             child.parent = self
             self.children.append(child)
 
+        @property
+        def is_root(self):
+            return False
+
+        @property
+        def text(self):
+            return '\n'.join([l.text for l in self.lines])
+
+    class Root(Node):
+        def __init__(self):
+            super().__init__(line=None)
+            self.lines = None
+
+        @property
+        def is_root(self):
+            return True
+
+    class Paragraph(Node):
+        '''
+        The simplest node, basically anything that's not a section header
+        or a top-level checkbox.
+        '''
+        def __init__(self, line, parent=None):
+            super().__init__(line, parent)
+            self.indent = 0
+
         @classmethod
-        def from_line(cls, line, next_line, last_section):
+        def handle_lines(cls, lines, node, section):
+            line = lines[0]
+            if not line.text:
+                return None, [line], lines[1:]
+
+            match = re.match(r'(\s*)(.*)', line.text)
+            if match[1]:
+                # some indent, let's append it to the current paragraph (if
+                # any) or as a new paraph to the current node.
+                # This works because we only care about top-level
+                # checkboxes in uji.
+                if isinstance(node, MarkdownParser.Paragraph):
+                    logger.debug('Extension of current paragraph')
+                    return node, [line], lines[1:]
+
+                p = cls(line, node)
+                p.indent = len(match[1])
+                node.add_child(p)
+                logger.debug(f'Sub-paragraph for {node}')
+            else:
+                # no indent, belongs to current section
+                if (isinstance(node, MarkdownParser.Paragraph) and
+                        node.indent == 0):
+                    logger.debug('Extension of paragraph')
+                    return node, [line], lines[1:]
+
+
+                if section is None:
+                    section = node  # should be the root node
+                p = cls(line, section)
+                section.add_child(p)
+                logger.debug(f'Top-level paragraph for {section}')
+
+            return p, [line], lines[1:]
+
+    class Checkbox(Node):
+        def __init__(self, line, parent=None):
+            super().__init__(line, parent)
+
+        @classmethod
+        def from_lines(cls, lines, section):
+            line = lines[0]
+            match = re.match(r'^- \[[ xX]\] (.*)', line.text)
+            if not match:
+                return None, [], lines
+
+            line = lines[0]
+            cb = cls(line, section)
+            if section:
+                section.add_child(cb)
+            return cb, [line], lines[1:]
+
+    class Section(Node):
+        def __init__(self, line, parent=None):
+            super().__init__(line)
+            self.headline = line.text
+            self.marker = None
+            self.parent = None
+
+        @classmethod
+        def from_lines(cls, lines, last_section):
+            line = lines[0]
             section = cls(line)
 
             # header style ## foo
             match = re.match('^(#+) (.*)', line.text)
             if match:
+                used = 1
                 section.level = len(match[1])
                 section.marker = match[1]
-                section.text = match[2]
+                section.headline = match[2]
 
                 parent = last_section
-                while parent:
+                while parent and not parent.is_root:
                     if section.level > parent.level:
                         parent.add_child(section)
                         break
@@ -358,23 +450,24 @@ class MarkdownParser(object):
                 #   ===
                 # at least 3 characters but strict underlining is not
                 # required
-                twolines = '\n'.join([line.text, next_line.text])
+                twolines = '\n'.join([l.text for l in lines[:2]])
                 match = re.match('^(.*)\n([-_=.:]{3,})', twolines)
                 if not match:
-                    return None
+                    return None, [], lines
 
-                section.text = match[1]
+                used = 2
+                section.headline = match[1]
                 section.marker = match[2][0]
                 # annoying: markdown doesn't specify which header style
                 # is h1, h2, etc. So the only way we can know is by
                 # running up the tree, if we have the same there it'll
                 # be a sibling.
                 parent = last_section
-                while parent:
+                while parent and not parent.is_root:
                     if parent.marker == section.marker:  # found a sibling
                         if parent.parent:
                             parent.parent.add_child(section)
-                            section.level = parent.parent.level + 1
+                            section.level = parent.level
                         else:  # top-level section
                             section.level = 1
                         break
@@ -393,13 +486,13 @@ class MarkdownParser(object):
                         section.level = 1
 
             logger.debug(repr(section))
-            return section
+            return section, lines[:used], lines[used:]
 
         def __str__(self):
             return self.text
 
         def __repr__(self):
-            return f'Section lvl {self.level}: "{self.text}", parent {self.parent.text if self.parent else "<none>"}'
+            return f'Section lvl {self.level}: "{self.text}", parent {self.parent if self.parent else "<none>"}'
 
     class Line(object):
         def __init__(self, lineno, text):
@@ -407,7 +500,7 @@ class MarkdownParser(object):
             self.lineno = lineno
             self.text = text
             self.section = None
-            self.is_checkbox = re.match('- \[[ xX]{1}\] .*', text)
+            self.is_checkbox = re.match(r'- \[[ xX]{1}\] .*', text)
             self.is_attachment = '📎' in text
 
         def __str__(self):
@@ -436,7 +529,7 @@ class MarkdownParser(object):
         @property
         def attachment(self):
             '''Returns a tuple of (filename, path)'''
-            match = re.match('.*📎 \[`(.*)`\]\((.*)\).*', self.text)
+            match = re.match(r'.*📎 \[`(.*)`\]\((.*)\).*', self.text)
             return (match[1], match[2])
 
     def __init__(self, fd):
@@ -446,31 +539,39 @@ class MarkdownParser(object):
         self.tree = self._parse(self.lines)
 
     def _parse(self, lines):
-        tree = MarkdownParser.AST()
+        tree = MarkdownParser.Root()
 
+        logger.debug('Parsing markdown file')
+
+        node = tree     # Current node
         section = None  # Current section
-        for l1, l2 in zip(lines, lines[1:]):
-            if l1.text.startswith('#'):
-                section = MarkdownParser.Section.from_line(l1, l2, last_section=section)
-                if not section.parent:
-                    tree.sections.append(section)
-            elif l1.text and l2.text:
-                new_section = MarkdownParser.Section.from_line(l1, l2, last_section=section)
-                if new_section:
-                    section = new_section
-                    if not new_section.parent:
-                        tree.sections.append(section)
-            l1.section = section
 
-        # zip means we skip over the last line so it has to be handled
-        # manually
-        if lines[-1].text.startswith('#'):
-            raise MarkdownError('Header on last line is not supported')
-        lines[-1].section = section
+        while lines:
+            logger.debug(lines[0])
+            new_section, used, remainder = MarkdownParser.Section.from_lines(lines, last_section=section)
+            if new_section:
+                logger.debug(f'Found section {new_section}')
+                section = new_section
+                node = section
+                if not new_section.parent:
+                    tree.add_child(section)
+            else:
+                cb, used, remainder = MarkdownParser.Checkbox.from_lines(lines, section=section)
+                if cb:
+                    logger.debug('Found checkbox')
+                    node = cb
+                    if not cb.parent:
+                        tree.add_child(cb)
+                else:
+                    p, used, remainder = MarkdownParser.Paragraph.handle_lines(lines, node, section)
+                    if p:
+                        node = p
 
-        for l in lines:
-            if l.section:
-                l.section.lines.append(l)
+            for l in used:
+                l.section = section
+
+            node.lines += used
+            lines = remainder
 
         return tree
 
