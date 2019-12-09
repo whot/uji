@@ -1151,8 +1151,31 @@ class UjiTest(cmd.Cmd):
             print(p.text)
 
         print(f'Tests available:')
-        for idx, t in self.tests.items():
-            print(f'[{idx}] {t.pretty_text}')
+
+        # FIXME: this overlaps with compile_tests but the order is still the
+        # same I think. Just for demo purposes for now.
+
+        idx = 0
+        # those without test summaries first
+        for t in self.section.children:
+            if t.type == 'checkbox':
+                print(f'[{idx}] {t.pretty_text}')
+                t.text_idx = idx
+                idx += 1
+
+        for s in self.section.children:
+            if s.type == 'section':
+                print(bold(s.headline))
+            for p in s.children:
+                if p.type != 'paragraph':
+                    break
+                print(p.text)
+            for t in s.children:
+                if t.type == 'checkbox':
+                    print(f'[{idx}] {t.pretty_text}')
+                    t.test_idx = idx
+                    idx += 1
+
         print(f'Switch to test N with "t N"')
 
     def do_test(self, args=None):
