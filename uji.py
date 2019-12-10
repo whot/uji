@@ -422,10 +422,12 @@ class UjiNew(object):
             self.filename = filename
             self.path = None
 
-        def make_path_name(self, test, directory):
+        def make_path_name(self, test, base_directory):
+            directory = Path(base_directory) / test.actor.id / test.id
+            directory.mkdir(parents=True, exist_ok=True)
             # Unicode Character 'DIVISION SLASH' (U+2215)
-            filename = f'{test.actor.id}.{test.id}.{self.filename}'.replace('/', '∕')
-            self.path = Path(directory) / filename
+            filename = f'{self.filename}'.replace('/', '∕')
+            self.path = directory / filename
 
         def __str__(self):
             return self.filename
@@ -441,11 +443,13 @@ class UjiNew(object):
             if self.output != 'attach':
                 return
 
+            directory = Path(directory) / test.actor.id / test.id
+            directory.mkdir(parents=True, exist_ok=True)
+
             # Unicode Character 'NO-BREAK SPACE' (U+00A0)
             # Unicode Character 'MINUS SIGN' (U+2212)
             run = self.run.replace(' ', '\u00A0').replace('-', '\u2212')
-            filename = f'{test.actor.id}.{test.id}.{run}'
-            self.path = Path(directory) / filename
+            self.path = Path(directory) / run
 
     @classmethod
     def add_arguments(cls, parent_parser):
@@ -515,7 +519,7 @@ class UjiNew(object):
 
         print(f'Your test records and log files are')
         print(f'  {self.target_directory}/')
-        for file in Path(self.target_directory).iterdir():
+        for file in Path(self.target_directory).glob("**/*"):
             print(f'  {file}')
         print(f'Run "git commit" to commit the changes, or "git reset" to throw them away')
 
