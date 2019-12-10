@@ -150,8 +150,9 @@ class ExtendedYaml(UserDict):
         self.include_path = include_path
 
     def __load(self, stream):
-        data = self.__process_includes(stream)
-        data = yaml.safe_load(data)
+        data = io.StringIO()
+        self.__process_includes(stream, dest=data)
+        data = yaml.safe_load(data.getvalue())
         if not isinstance(data, dict):
             raise YamlError('Invalid YAML data format, expected a dictionary')
 
@@ -162,12 +163,15 @@ class ExtendedYaml(UserDict):
         for k, v in data.items():
             self[k] = v
 
-    def __process_includes(self, source, dest=None, level=0):
-        if level > 10:
+    def __process_includes(self, source, dest, level=0):
+        '''
+        Handles include: statements. Reads the source line-by-line
+        and write it to the destination. Where a ``include: filename`` line
+        is present, the filename is opened and this function is called
+        recursively for that file.
+        '''
+        if level > 10:  # 10 levels of includes must be enough.
             return ''
-
-        if dest is None:
-            dest = io.StringIO()
 
         for line in source:
             # version check - all included files must have the same version
@@ -192,9 +196,7 @@ class ExtendedYaml(UserDict):
 
             filename = line[len('include:'):].strip()
             with open(Path(self.include_path) / filename) as included:
-                dest.write(self.__process_includes(included, dest, level + 1))
-
-        return dest.getvalue()
+                self.__process_includes(included, dest, level + 1)
 
     def __process_extends(self, yaml):
         def merge(a, b):
