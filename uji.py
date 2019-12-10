@@ -654,9 +654,16 @@ class UjiNew(object):
                     cb.checkbox(instruction)
                     logger.debug(f'{actor.id}.{test.id} - {instruction}')
                 for f in test.files:
-                    cb.file_attachment(f.filename, f.path)
+                    # test file path contains the target directory but we
+                    # need the one relative to within that directory
+                    fpath = Path(f.path).relative_to(Path(self.target_directory))
+                    cb.file_attachment(f.filename, fpath)
                 for command in test.commands:
-                    cb.command_output(command.run, command.description, command.output, command.path)
+                    if command.path:
+                        cpath = Path(command.path).relative_to(Path(self.target_directory))
+                    else:
+                        cpath = None
+                    cb.command_output(command.run, command.description, command.output, cpath)
 
     def _make_file_name(self, test, filename):
         # Unicode Character 'DIVISION SLASH' (U+2215)
