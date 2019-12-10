@@ -416,13 +416,9 @@ class UjiNew(object):
             for fname, fvalue in yaml.get('filter', {}).items():
                 self.filters[fname] = fvalue
             self.tests = yaml.get('tests', [])
-            logs = yaml.get('logs', None)
-            if logs:
-                self.files = [UjiNew.FileName(f) for f in logs.get('files', [])]
-                self.commands = [UjiNew.Command(yaml) for yaml in logs.get('commands', [])]
-            else:
-                self.files = []
-                self.commands = []
+            logs = yaml.get('logs', {})
+            self.files = [UjiNew.FileName(f) for f in logs.get('files', [])]
+            self.commands = [UjiNew.Command(yaml) for yaml in logs.get('commands', [])]
             self.actor = None
             logger.debug(self)
 
