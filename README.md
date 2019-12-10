@@ -26,6 +26,8 @@ probably look nice in the browser.
 uji just preps the file for you and (in the future) provides a set of
 CLI tools to automate some tasks around maintaining the test files.
 
+"uji" is Indonesian for "test".
+
 Use case
 ========
 
@@ -70,7 +72,7 @@ configuration.
 ```
 $ mkdir my-test-results && cd my-test-results
 $ git init
-$ wget -o mypackage.yaml https://github.com/whot/uji/tree/master/example.yaml
+$ wget -o mypackage.yaml https://github.com/whot/uji/tree/master/examples/example.yaml
 ```
 
 Now you're set up. Edit the `mypackage.yaml` file and add your tests.
@@ -83,22 +85,46 @@ And when you're ready to start a test run:
 $ cd my-test-results
 $ uji new mypackage.yaml
 Your test records and log files are
-  mypackage-2019-12-04.0/
-  mypackage-2019-12-04.0/generic_usb_keyboard.test_usb_logs.lsusb −v
-  mypackage-2019-12-04.0/generic_usb_keyboard.test_hotplug.dmesg
-  mypackage-2019-12-04.0/generic_laptop_keyboard.test_hotplug.dmesg
-  mypackage-2019-12-04.0/mypackage.md
-  mypackage-2019-12-04.0/mypackage.yaml
-  mypackage-2019-12-04.0/general.log_some_check.∕path∕to∕testsuite.output
-  mypackage-2019-12-04.0/general.log_input_devices.∕proc∕bus∕input∕devices
-  mypackage-2019-12-04.0/general.log_input_devices.evtest
+  mypackage-2019-12-10.0/
+  mypackage-2019-12-10.0/logitech_keyboard
+  mypackage-2019-12-10.0/t450_keyboard
+  mypackage-2019-12-10.0/t460_keyboard
+  mypackage-2019-12-10.0/example.md
+  mypackage-2019-12-10.0/example.yaml
+  mypackage-2019-12-10.0/logitech_g500s
+  mypackage-2019-12-10.0/macbook_keyboard
+  mypackage-2019-12-10.0/logitech_mx_anywhere_2s
+  mypackage-2019-12-10.0/logitech_keyboard/test_hotplug_libinput
+  mypackage-2019-12-10.0/logitech_keyboard/test_usb_logs
+  mypackage-2019-12-10.0/logitech_keyboard/log_input_devices
+  mypackage-2019-12-10.0/logitech_keyboard/test_hotplug_libinput/dmesg
+  mypackage-2019-12-10.0/logitech_keyboard/test_usb_logs/lsusb −v
+  mypackage-2019-12-10.0/logitech_keyboard/log_input_devices/libinput record −−all
+  mypackage-2019-12-10.0/logitech_keyboard/log_input_devices/∕proc∕bus∕input∕devices
+  mypackage-2019-12-10.0/t450_keyboard/log_input_devices
+  mypackage-2019-12-10.0/t450_keyboard/log_input_devices/libinput record −−all
+  mypackage-2019-12-10.0/t450_keyboard/log_input_devices/∕proc∕bus∕input∕devices
+  mypackage-2019-12-10.0/t460_keyboard/log_input_devices
+  mypackage-2019-12-10.0/t460_keyboard/log_input_devices/libinput record −−all
+  mypackage-2019-12-10.0/t460_keyboard/log_input_devices/∕proc∕bus∕input∕devices
+  mypackage-2019-12-10.0/logitech_g500s/log_input_devices
+  mypackage-2019-12-10.0/logitech_g500s/log_input_devices/libinput record −−all
+  mypackage-2019-12-10.0/logitech_g500s/log_input_devices/∕proc∕bus∕input∕devices
+  mypackage-2019-12-10.0/macbook_keyboard/test_usb_logs
+  mypackage-2019-12-10.0/macbook_keyboard/log_input_devices
+  mypackage-2019-12-10.0/macbook_keyboard/test_usb_logs/lsusb −v
+  mypackage-2019-12-10.0/macbook_keyboard/log_input_devices/libinput record −−all
+  mypackage-2019-12-10.0/macbook_keyboard/log_input_devices/∕proc∕bus∕input∕devices
+  mypackage-2019-12-10.0/logitech_mx_anywhere_2s/log_input_devices
+  mypackage-2019-12-10.0/logitech_mx_anywhere_2s/log_input_devices/libinput record −−all
+  mypackage-2019-12-10.0/logitech_mx_anywhere_2s/log_input_devices/∕proc∕bus∕input∕devices
 Run "git commit" to commit the changes, or "git reset" to throw them away
 $ git commit -am 'mypackage: new test log set'
 $ vim mypackage-2019-12-04.0/mypackage.md
 # tick off the tests as you confirm them
 
-$ cp /proc/bus/input/devices mypackage-2019-12-04.0/general.log_some_check.∕path∕to∕testsuite.output
-$ dmesg &> mypackage-2019-12-04.0/generic_laptop_keyboard.test_hotplug.dmesg
+$ cp /proc/bus/input/devices mypackage-2019-12-10.0/logitech_keyboard/log_input_devices/∕proc∕bus∕input∕devices
+$ lsusb &> mypackage-2019-12-10.0/macbook_keyboard/test_usb_logs/lsusb −v
 
 # copy the other files into the right file names
 
