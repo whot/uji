@@ -681,10 +681,6 @@ class UjiNew(object):
                         cpath = None
                     cb.command_output(command.run, command.description, command.output, cpath)
 
-    def _make_file_name(self, test, filename):
-        # Unicode Character 'DIVISION SLASH' (U+2215)
-        return f'{test.actor.id}.{test.id}.{filename}'.replace('/', '∕')
-
     def _generate_test_files(self):
         for test in self.tests:
             for f in test.files:
