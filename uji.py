@@ -682,6 +682,9 @@ class UjiNew(object):
                     cb.command_output(command.run, command.description, command.output, cpath)
 
     def _generate_test_files(self):
+        # pre-generate the test files we want to save the various outputs
+        # to. Those files are yaml-compatible to begin with, we could read
+        # them back to get the info we need to auto-fill those.
         for test in self.tests:
             for f in test.files:
                 with open(f.path, 'w') as fd:
