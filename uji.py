@@ -170,6 +170,8 @@ class ExtendedYaml(UserDict):
             dest = io.StringIO()
 
         for line in source:
+            # version check - all included files must have the same version
+            # as the original file
             if line.startswith('version:'):
                 version = int(line[len('version:'):].strip())
                 try:
@@ -334,32 +336,35 @@ class MarkdownFormatter(object):
             self.parent.fprint('')
             return False
 
-        def _checkbox(self, text, indent=0, symbol='⍿'):
+        def _checkbox(self, text, indent=0, symbol=''):
             spaces = " " * indent * 2
-            self.parent.fprint(f'{spaces} - [ ] {symbol} {text}')
+            self.parent.fprint(f'{spaces} - [ ]{" " if symbol else ""}{symbol} {text}')
 
         def checkbox(self, text, indent=0):
             self._checkbox(text, indent)
 
         def checkbox_attachment(self, text, indent=0):
-            self._checkbox(text, indent, symbol='\U0001F4CE')
+            self._checkbox(text, indent, symbol='📎')
+
+        def checkbox_command(self, text, indent=0):
+            self._checkbox(text, indent, symbol='⍿')
 
         def file_attachment(self, filename, path):
             self.checkbox_attachment(f'[`{filename}`]({path})')
 
         def command_output(self, command, description, output_type, filename=None):
             if output_type == 'exitcode':
-                self.checkbox(f'`{command}`')
+                self.checkbox_command(f'`{command}`')
                 if description:
                     self.parent.fprint(f'  - {description}')
                 self.checkbox(f'SUCCESS', indent=1)
                 self.checkbox(f'FAIL', indent=1)
             elif output_type == 'single':
-                self.checkbox(f'`{command}`: `COMMAND OUTPUT`')
+                self.checkbox_command(f'`{command}`: `COMMAND OUTPUT`')
                 if description:
                     self.parent.fprint(f'  - {description}')
             elif output_type == 'multi':
-                self.checkbox(f'`{command}`:')
+                self.checkbox_command(f'`{command}`:')
                 if description:
                     self.parent.fprint(f'  - {description}')
                 self.parent.fprint(f'```')
@@ -367,11 +372,11 @@ class MarkdownFormatter(object):
                 self.parent.fprint(f'')
                 self.parent.fprint(f'```')
             elif output_type == 'attach':
-                self.checkbox_attachment(f'[`{command}`]({filename})')
+                self.checkbox_command(f'[`{command}`]({filename})')
                 if description:
                     self.parent.fprint(f'  - {description}')
             elif output_type == 'human':
-                self.checkbox(f'`{command}`: <strong>ADD COMMENTS HERE</strong>')
+                self.checkbox_command(f'`{command}`: <strong>ADD COMMENTS HERE</strong>')
                 if description:
                     self.parent.fprint(f'  - {description}')
 
