@@ -185,7 +185,8 @@ class ExtendedYaml(UserDict):
                 dest.write(line)
                 continue
 
-            # used for test cases only, really. all uji cases use a
+            # used for test cases only, really. all uji user cases use a
+            # file anyway, not a string.
             if not self.include_path:
                 raise YamlError('Cannot include from a text stream')
 
