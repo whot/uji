@@ -469,7 +469,7 @@ class UjiNew(object):
     def __init__(self, filename, target_directory):
         assert filename
 
-        self.filename = Path(filename).name
+        self.filename = Path(filename)
         self.output = io.StringIO()
         try:
             self.repo = git.Repo(search_parent_directories=True)
@@ -507,14 +507,14 @@ class UjiNew(object):
         self._process()
 
         # save the combined yaml file
-        outfile = Path(self.target_directory) / self.filename
+        outfile = Path(self.target_directory) / self.filename.name
         with open(outfile, 'w') as fd:
             yaml.dump(self.yaml.data, stream=fd, default_flow_style=False)
 
         self.repo.index.add([os.fspath(outfile)])
 
         # record log goes into dirname/yamlfile.md
-        outfile = Path(self.filename).stem + '.md'
+        outfile = self.filename.stem + '.md'
         outfile = Path(self.target_directory) / outfile
         with open(outfile, 'w') as fd:
             print(self.output.getvalue(), file=fd)
