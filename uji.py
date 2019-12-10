@@ -229,7 +229,7 @@ class ExtendedYaml(UserDict):
                 continue
 
             if referenced not in yaml or referenced == section:
-                raise YamlError('Invalid section for "extends: {referenced}"')
+                raise YamlError(f'Invalid section for "extends: {referenced}"')
 
             # We need deep copies to avoid references to lists within dicts,
             # etc.
