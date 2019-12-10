@@ -548,6 +548,9 @@ class UjiNew(object):
             if section == 'file':
                 continue
 
+            if section == 'generic':
+                raise YamlError(f'Keywoard "generic" is reserved and cannot be used for section names')
+
             if not data.get('type'):
                 raise YamlError(f'Section {section} does not have a type')
 
