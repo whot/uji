@@ -145,6 +145,10 @@ class ExtendedYaml(UserDict):
 
     '''
 
+    def __init__(self, include_path=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.include_path = include_path
+
     def __load(self, stream):
         data = self.__process_includes(stream)
         data = yaml.safe_load(data)
@@ -179,7 +183,8 @@ class ExtendedYaml(UserDict):
                 dest.write(line)
                 continue
 
-            if not getattr(self, 'include_path'):
+            # used for test cases only, really. all uji cases use a
+            if not self.include_path:
                 raise YamlError('Cannot include from a text stream')
 
             filename = line[len('include:'):].strip()
@@ -258,8 +263,7 @@ class ExtendedYaml(UserDict):
             raise YamlError(f'"{filename}" is not a file')
 
         with open(path) as f:
-            yml = ExtendedYaml()
-            yml.include_path = Path(filename).parent
+            yml = ExtendedYaml(include_path=Path(filename).parent)
             yml.__load(f)
             return yml
 
