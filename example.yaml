@@ -64,50 +64,127 @@ version: 1
 file:
     example.yaml: |
         This is an example yaml file. The text here is used as the file
-        description in the generated markdown file.
+        description in the generated markdown file. This section can contain
+        normal **markdown** syntax.
+
+        You can add
+        - list items
+        - here as well
+        And other things such as a [link to uji](https://github.com/whot/uji).
+
+# First, let's define some actors. It's really up to you to decide what
+# is an actor but as a general rule: it's a thing you test against.
+# Since the tests will be executed against the actor itself, it pays off to
+# have the actor defined as a very specific entity rather than as a
+# representative of a group. IOW, use "G500s mouse" over "USB mouse".
+#
+# Since we support 'include:' statements, you could have files with all the
+# hw you have defined in mice.yaml, keyboards.yaml, etc.
   
-generic_laptop_keyboard:
+t450_keyboard:
   type: actor
-  name: AT Translated Keyboard
-  description: the PS/2 thing with keys as found in laptops
+  name: Lenovo T450s - AT Translated Keyboard
+  description: Default built-in keyboard of the Lenovo T450s
   # tags is a dictionary of entries that the tests can later be filtered on
   # The keys are free-form.
   tags:
+    device: keyboard
     bus: PS/2
+    vendor: lenovo
+    integration: internal
 
-# inherits everything from above but overwrites the tags
-generic_usb_keyboard:
-  extends: generic_laptop_keyboard
-  name: External USB Keyboard
-  description: A USB keyboard
+# inherits everything from above but overwrites the tags. The actor itself
+# thus looks mostly the same, but since it's a different piece of HW we want
+# to run the tests separately.
+t460_keyboard:
+  extends: t450_keyboard
+  name: Lenovo T460s - AT Translated Keyboard
+  description: Default built-in keyboard of the Lenovo T460s
+
+macbook_keyboard:
+  type: actor
+  name: Apple Macbook 13 - Apple keyboard
+  description: Macbook built-in USB keyboard
   tags:
+    device: keyboard
     bus: USB
+    vendor: apple
+    integration: internal
 
+logitech_keyboard:
+  type: actor
+  name: Logitech K800 Keyboard
+  description: External Logitech keyboard.
+  tags:
+    device: keyboard
+    bus: USB
+    vendor: logitech
+    integration: external
 
-# A set of test instructions. The filter argument
-# means this will be applied to anything with a bus of USB and/or PS/2.
+# Note the tags are completely free-form, not all are required, they only
+# relate to the test filters so you can re-use them or use different ones
+# for different sets of actors.
+logitech_g500s:
+  type: actor
+  name: Logitech G500s
+  description: |
+    Logitech G500s external gaming mouse. Supports up to 5 profiles and is
+    in 1000dpi out of the box.
+  tags:
+    device: mouse
+    vendor: logitech
+    connection: cable
+
+logitech_mx_anywhere_2s:
+  type: actor
+  name: Logitech MX Anywhere 2S
+  description: |
+    Logitech MX Anywhere 2S gaming mouse connected over Unifying receiver.
+  tags:
+    device: mouse
+    vendor: logitech
+    connection: unifying
+
+# Now let's define some test
+
+# The filter arguments mean this will be tested on "device:keyboard" only
+# but for any "bus:" value, iow the actor must have a bus: tag but the
+# actual value doesn't matter. Actors without a bus: tag won't be matched
+# against here.
 test_keyboard:
   type: test
   filter:
-    bus:
-      - PS/2
-      - USB
+    device: [keyboard]
+    bus: [__any__]
   tests:
-    - make sure we can type keys
-    - kbd LEDs
+    - key presses QWERTY generate the expected key codes
+    - kbd LEDs work as expected
 
-test_usb_keyboards:
+# A test to run only on external keyboards
+test_external_keyboards:
   type: test
   filter:
+    device: keyboard
+    integration: external
+  tests:
+    - keyboard works after unplug + plug
+
+# A test to run only any USB keyboard
+test_usb_hid:
+  type: test
+  filter:
+    device: keyboard
     bus: USB
   tests:
-    - plug and unplug the keyboard
+    - verify hid report descriptor parses with `hid-parse`
 
+# This is a test without a filter, so it will show up in the "Generic"
+# section but not for any specific actor. Good for things you need to
+# collect only once.
 test_general:
   type: test
-  name: General
   tests:
-    - hid-tools test suite
+    - hid-tools test suite successfully completed
 
 test_system:
   type: test
@@ -115,11 +192,10 @@ test_system:
   tests:
     - kernel not tainted on boot
 
-test_hotplug:
+test_hotplug_libinput:
   type: test
   filter:
-    # special value __any__ means any value for that key
-    bus: [__any__]
+    integration: [external]
   tests:
     - unplugging shows `DEVICE_ADDED`/`DEVICE_REMOVED` events
   logs:
@@ -140,24 +216,29 @@ test_usb_logs:
         output: attach
 
 # A test without a 'tests' entry just collects logs
+# This one we want for mice/keyboards but not for video cards
 log_input_devices:
   type: test
+  filter:
+    device: [mouse, keyboard]
   logs:
       files:
         - /proc/bus/input/devices
       commands:
-        - run: evtest
+        - run: libinput record --all
           output: attach
 
 log_version:
   type: test
   logs:
       commands:
-        - run: my-command --version
+        - run: libinput --version
           output: single
 
 log_some_check:
   type: test
+  filter:
+    device: [videocard]
   logs:
       files:
         - /path/to/testsuite.output
