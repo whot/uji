@@ -37,7 +37,7 @@ from pathlib import Path
 
 from collections import UserDict
 
-logger = logging.getLogger('testtmpl')
+logger = logging.getLogger('uji')
 
 
 class YamlError(Exception):
