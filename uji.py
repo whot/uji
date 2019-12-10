@@ -637,10 +637,10 @@ class UjiNew(object):
                             actor.tags[key] not in values):
                         break
                 else:
-                        dup = deepcopy(test)
-                        actor.tests.append(dup)
-                        dup.actor = actor
-                        all_tests.append(dup)
+                    dup = deepcopy(test)
+                    actor.tests.append(dup)
+                    dup.actor = actor
+                    all_tests.append(dup)
 
         return all_tests
 
