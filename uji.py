@@ -397,7 +397,6 @@ class UjiNew(object):
             for tname, tvalue in yaml.get('tags', {}).items():
                 self.tags[tname] = tvalue
             self.tests = []
-            logger.debug(self)
 
         @classmethod
         def default_actor(cls):
@@ -420,7 +419,6 @@ class UjiNew(object):
             self.files = [UjiNew.FileName(f) for f in logs.get('files', [])]
             self.commands = [UjiNew.Command(yaml) for yaml in logs.get('commands', [])]
             self.actor = None
-            logger.debug(self)
 
         def __str__(self):
             return f'UjiNew.Test: {self.id}: filters {self.filters}'
@@ -592,9 +590,13 @@ class UjiNew(object):
 
             stype = sdata['type']
             if stype == 'actor':
-                self.actors[section] = UjiNew.Actor(section, sdata)
+                actor = UjiNew.Actor(section, sdata)
+                self.actors[section] = actor
+                logger.debug(f'New actor: {actor}')
             elif stype == 'test':
-                tests.append(UjiNew.Test(section, sdata))
+                test = UjiNew.Test(section, sdata)
+                tests.append(test)
+                logger.debug(f'New test: {test}')
             else:
                 raise YamlError(f'Unknown section type {stype}')
 
