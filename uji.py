@@ -621,17 +621,21 @@ class UjiNew(object):
                         all_tests.append(dup)
                     continue
 
-                # Tests with filters are matched up
-                for tag, tagstr in actor.tags.items():
-                    try:
-                        if ('__any__' in test.filters[tag] or
-                                tagstr in test.filters[tag]):
-                            dup = deepcopy(test)
-                            actor.tests.append(dup)
-                            dup.actor = actor
-                            all_tests.append(dup)
-                    except KeyError:
-                        pass
+                if not test.filters:
+                    continue
+
+                # filtered tests
+                for key, values in test.filters.items():
+                    if key not in actor.tags:
+                        break
+                    if ('__any__' not in values and
+                            actor.tags[key] not in values):
+                        break
+                else:
+                        dup = deepcopy(test)
+                        actor.tests.append(dup)
+                        dup.actor = actor
+                        all_tests.append(dup)
 
         return all_tests
 
