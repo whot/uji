@@ -35,7 +35,82 @@ import os
 from copy import deepcopy
 from pathlib import Path
 
+
+class Colors:
+    BLACK = '\033[30m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    LIGHT_GRAY = '\033[37m'
+    DARK_GRAY = '\033[90m'
+    LIGHT_RED = '\033[91m'
+    LIGHT_GREEN = '\033[92m'
+    LIGHT_YELLOW = '\033[93m'
+    LIGHT_BLUE = '\033[94m'
+    LIGHT_MAGENTA = '\033[95m'
+    LIGHT_CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    BG_BLACK = '\u001b[40m'
+    BG_RED = '\u001b[41m'
+    BG_GREEN = '\u001b[42m'
+    BG_YELLOW = '\u001b[43m'
+    BG_BLUE = '\u001b[44m'
+    BG_MAGENTA = '\u001b[45m'
+    BG_CYAN = '\u001b[46m'
+    BG_WHITE = '\u001b[47m'
+    BG_BRIGHT_BLACK = '\u001b[40;1m'
+    BG_BRIGHT_RED = '\u001b[41;1m'
+    BG_BRIGHT_GREEN = '\u001b[42;1m'
+    BG_BRIGHT_YELLOW = '\u001b[43;1m'
+    BG_BRIGHT_BLUE = '\u001b[44;1m'
+    BG_BRIGHT_MAGENTA = '\u001b[45;1m'
+    BG_BRIGHT_CYAN = '\u001b[46;1m'
+    BG_BRIGHT_WHITE = '\u001b[47;1m'
+
+    @classmethod
+    def format(cls, message):
+        '''
+        Format the given message with the colors, always ending with a
+        reset escape sequence.
+
+        .. param: message
+
+        The to-be-colorized message. Use the colors prefixed with a dollar
+        sign, e.g. ``Colors.format(f'$RED{somevar}$RESET')``
+
+        '''
+        for k, v in cls.__dict__.items():
+            if not isinstance(v, str) or v[1] != '[':
+                continue
+            message = message.replace('$' + k, v)
+        return message + cls.RESET
+
+
+class ColorFormatter(logging.Formatter):
+    def format(self, record):
+        COLORS = {
+            'DEBUG': Colors.LIGHT_GRAY,
+            'INFO': Colors.LIGHT_GREEN,
+            'WARNING': Colors.YELLOW,
+            'ERROR': Colors.LIGHT_RED,
+            'CRITICAL': Colors.RED,
+        }
+        message = logging.Formatter.format(self, record)
+        message = message.replace(f'$COLOR', COLORS[record.levelname])
+        return Colors.format(message)
+
+
+log_format = '$COLOR%(levelname)s: %(message)s'
+logger_handler = logging.StreamHandler()
+logger_handler.setFormatter(ColorFormatter(log_format))
 logger = logging.getLogger('uji')
+logger.addHandler(logger_handler)
+logger.setLevel(logging.ERROR)
 
 
 class YamlError(Exception):
@@ -702,14 +777,21 @@ class Uji(object):
 
     def run(self, args):
         parser = argparse.ArgumentParser(description='Generate a test case template')
-        parser.add_argument('--verbose', action='store_true', default=False, help='Verbose debugging output')
+        parser.add_argument('--verbose', '-v', action='count', default=0, help='Increase debugging output')
         subparsers = parser.add_subparsers(title='Commands', help='Available sub-commands')
 
         # Add the sub commands
         UjiNew.add_arguments(subparsers)
 
         args = parser.parse_args(args)
-        logging.basicConfig(level=logging.DEBUG if args.verbose else logging.ERROR)
+
+        verbose_levels = {
+            0: logging.ERROR,
+            1: logging.INFO,
+            2: logging.DEBUG,
+        }
+
+        logger.setLevel(verbose_levels.get(args.verbose, 2))
         if not hasattr(args, 'func'):
             print('Missing subcommand. Use --help', file=sys.stderr)
             sys.exit(1)
