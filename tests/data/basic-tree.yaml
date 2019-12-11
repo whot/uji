@@ -1,0 +1,51 @@
+version: 1
+
+actor1:
+    type: actor
+    tags:
+        actor: one
+
+actor2:
+    type: actor
+    tags:
+        actor: two
+
+# generic test
+test1:
+    type: test
+    test:
+        - testcase0
+    logs:
+        files: [file1]
+
+# generic test
+test2:
+    type: test
+    logs:
+        files: [file2]
+
+# all actors but not generic
+test3:
+    type: test
+    filter:
+        actor: [__any__]
+    tests:
+        - testcase1
+
+test4:
+    type: test
+    filter:
+        actor: [one]
+    tests:
+        - testcase2
+    logs:
+        files: [file3]
+
+test5:
+    type: test
+    filter:
+        actor: [two]
+    tests:
+        - testcase3
+    logs:
+        files: [file4]
