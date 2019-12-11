@@ -630,9 +630,23 @@ class UjiNew(object):
             if data['type'] == 'test':
                 if 'tests' not in data and 'logs' not in data:
                     raise YamlError(f'Section {section} doesn\'t have tests or logs')
+
+                for f, fs in data.get('filter', {}).items():
+                    if not isinstance(fs, list):
+                        raise YamlError(f'Section {section} filter {f} must be a list')
+
                 if 'logs' in data:
                     if 'files' not in data['logs'] and 'commands' not in data['logs']:
                         raise YamlError(f'Section {section} doesn\'t have log files or commands')
+
+                    if 'files' in data['logs']:
+                        if not isinstance(data['logs']['files'], list):
+                            raise YamlError(f'Section {section} file list is not a list')
+
+                    if 'commands' in data['logs']:
+                        if not isinstance(data['logs']['commands'], list):
+                            raise YamlError(f'Section {section} command list is not a list')
+
                     for command in data['logs'].get('commands', []):
                         if 'run' not in command:
                             raise YamlError(f'Command in {section} doesn\'t have run ')
