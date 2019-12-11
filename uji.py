@@ -35,8 +35,6 @@ import os
 from copy import deepcopy
 from pathlib import Path
 
-from collections import UserDict
-
 logger = logging.getLogger('uji')
 
 
@@ -44,7 +42,7 @@ class YamlError(Exception):
     pass
 
 
-class ExtendedYaml(UserDict):
+class ExtendedYaml(collections.UserDict):
     '''
     A version of YAML that supports extra keywords.
 
