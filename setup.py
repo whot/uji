@@ -85,7 +85,7 @@ setup(name='uji',
       data_files=[],  # man pages are added on success
       python_requires='>=3.6',
       include_package_data=True,
-      install_requires=['pyyaml'],
+      install_requires=['pyyaml', 'GitPython'],
       cmdclass=dict(
           install=ManPageGenerator,
       )
