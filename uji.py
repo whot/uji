@@ -707,6 +707,7 @@ class UjiNew(object):
                         actor.tests.append(dup)
                         dup.actor = actor
                         all_tests.append(dup)
+                        logger.debug(f'test {test} matches {actor}')
                     continue
 
                 if not test.filters:
@@ -724,6 +725,7 @@ class UjiNew(object):
                     actor.tests.append(dup)
                     dup.actor = actor
                     all_tests.append(dup)
+                    logger.debug(f'test {test} matches {actor}')
 
         return all_tests
 
