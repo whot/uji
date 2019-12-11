@@ -121,13 +121,13 @@ def test_extends_invalid():
 
 
 def test_include(datadir):
-    yml = ExtendedYaml.load_from_file(Path(datadir, 'include-test.yml'))
+    yml = ExtendedYaml.load_from_file(Path(datadir, 'include-test.yaml'))
     assert yml['foo']['bar'] == 'baz'
     assert yml['one']['two'] == 'three'
 
 
 def test_infinite_include(datadir):
-    yml = ExtendedYaml.load_from_file(Path(datadir, 'infinite-include.yml'))
+    yml = ExtendedYaml.load_from_file(Path(datadir, 'infinite-include.yaml'))
     assert yml['foo']['bar'] == 'infinite'
 
 def test_version(datadir):
@@ -148,5 +148,5 @@ def test_version(datadir):
     assert yml.version == 1
 
     with pytest.raises(YamlError) as e:
-        ExtendedYaml.load_from_file(Path(datadir, 'wrong-version.yml'))
+        ExtendedYaml.load_from_file(Path(datadir, 'wrong-version.yaml'))
         assert 'version mismatch' in e.message

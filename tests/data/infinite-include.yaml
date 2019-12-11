@@ -1,0 +1,4 @@
+foo:
+    bar: infinite
+
+include: infinite-include.yaml
