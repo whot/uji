@@ -570,10 +570,13 @@ class UjiNew(object):
 
         self._process()
 
-        # save the combined yaml file
+        # save the combined yaml file. The version is hidden away, so we
+        # need to manually add it again before writing it out
         outfile = Path(self.target_directory) / self.filename.name
         with open(outfile, 'w') as fd:
-            yaml.dump(self.yaml.data, stream=fd, default_flow_style=False)
+            data = deepcopy(self.yaml.data)
+            data['version'] = self.yaml.version
+            yaml.dump(data, stream=fd, default_flow_style=False)
 
         self.repo.index.add([os.fspath(outfile)])
 
