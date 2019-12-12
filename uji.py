@@ -810,6 +810,7 @@ class UjiView(object):
         self.stop = False
         self.view_offset = 0
         self.cursor_offset = 0
+        self.error = None
 
     def _render_markdown(self, lines):
         in_code_section = False
@@ -1048,6 +1049,8 @@ class UjiView(object):
 
     @property
     def statusline(self):
+        if self.error:
+            return Colors.format(f'$RED{self.error}')
         return Colors.format(f'$BOLD--- (j) up (k) down (n)ext (p)revious (t)oggle (u)pload (e)dit (q)uit')
 
     def run(self):
