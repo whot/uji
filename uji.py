@@ -802,6 +802,7 @@ class UjiView(object):
                 logger.warning('Multiple markdown files found, using "{md}"')
             except StopIteration:
                 pass
+        self.directory = Path(directory)
         self.mdfile = md
         # we keep the lines from the source file separate from the rendered
         # ones, the rendered ones are throwaways
@@ -911,6 +912,7 @@ class UjiView(object):
             'n': self.next,
             'p': self.previous,
             'm': self.mark,
+            'u': self.upload,
         }
 
         try:
@@ -959,6 +961,27 @@ class UjiView(object):
         self.writeout()
         self._redraw()
 
+    def upload(self):
+        line = self.lines[self.cursor_offset]
+        if not self.is_checkbox(line) or "📎" not in line:
+            return
+
+        match = re.match(r'.* \[(.*)\]\((.*)\).*', line)
+        if not match:
+            logger.error('Failed to match attachment line: {line}')
+            return
+
+        # filenames are in `backticks`
+        filename = re.sub(r'`?([^`]*)`?', r'\1', match[1])
+        path = self.directory / match[2]
+
+        try:
+            import shutil
+            shutil.copyfile(filename, path)
+            self.repo.index.add([os.fspath(path)])
+            self.mark()
+        except Exception as e:
+            logger.error(f'Failed to copy {filename}: {e}')
 
     def writeout(self):
         with open(self.mdfile, 'w') as fd:
