@@ -817,15 +817,14 @@ class UjiView(object):
         rendered = []
 
         for l in lines:
+            l = l[:-1]  # drop trailing \n
             if l.startswith('```'):
                 in_code_section = not in_code_section
                 l = f'$BG_BRIGHT_YELLOW {" " * 80}$RESET'
             elif in_code_section:
-                l = l[:-1]  # drop trailing \n
                 filler = ' ' * (80 - len(l))
                 l = f'$BG_BRIGHT_YELLOW {l}{filler}$RESET'
             else:
-                l = l.strip()
                 # bold
                 l = re.sub(r'\*\*([^*]*)\*\*', rf'$BOLD\1$RESET', l)
                 # italic
