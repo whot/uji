@@ -916,6 +916,7 @@ class UjiView(object):
             'p': self.previous,
             't': self.toggle,
             'u': self.upload,
+            'e': self.editor,
         }
 
         try:
@@ -1006,6 +1007,17 @@ class UjiView(object):
         except Exception as e:
             logger.error(f'Failed to copy {filename}: {e}')
 
+    def editor(self):
+        editor = os.environ.get('EDITOR')
+        if not editor:
+            return
+
+        from subprocess import call
+
+        call([editor, self.mdfile])
+        self.lines = open(self.mdfile).readlines()
+        self.rerender()
+
     def writeout(self):
         with open(self.mdfile, 'w') as fd:
             fd.write(''.join(self.lines))
@@ -1016,30 +1028,40 @@ class UjiView(object):
         self._init_buffer(self.window, self.lines)
         self._update_cursor(self.cursor_offset)
 
+    def _render(self):
+        # easiest to just swap the last line with our status line
+        # than figuring out how to to this properl. curties doesn't
+        # have a "draw on bottom line" method
+        bottom_line_idx = self.view_offset + self.window.height - 1
+        prev = self.line_buffer[bottom_line_idx]
+        self.line_buffer[bottom_line_idx] = self.statusline
+        self.window.render_to_terminal(self.line_buffer[self.view_offset:])
+        self.line_buffer[bottom_line_idx] = prev
+
+    def rerender(self):
+        # Clear the screen, then re-render everything
+        clearscreen = curtsies.FSArray(self.window.height, self.window.width)
+        for idx, l in enumerate(clearscreen):
+            clearscreen[idx] = [' ' * self.window.width]
+        self.window.render_to_terminal(clearscreen)
+        self._redraw()
+
     @property
     def statusline(self):
-        return Colors.format(f'$BOLD--- (j) up (k) down (n) next (p) previous (t) toggle (u) upload (q) quit')
+        return Colors.format(f'$BOLD--- (j) up (k) down (n) next (p) previous (t) toggle (u) upload (e) edit (q) quit')
 
     def run(self):
         with curtsies.FullscreenWindow() as window:
             self.window = window
             self._redraw()
             with curtsies.Input() as input_generator:
-                window.render_to_terminal(self.line_buffer[self.view_offset:])
+                self._render()
                 for c in input_generator:
                     self._handle_input(window, c)
                     if self.stop:
                         break
 
-                    # easiest to just swap the last line with our status line
-                    # than figuring out how to to this properl. curties doesn't
-                    # have a "draw on bottom line" method
-                    bottom_line_idx = self.view_offset + window.height - 1
-                    prev = self.line_buffer[bottom_line_idx]
-                    self.line_buffer[bottom_line_idx] = self.statusline
-                    window.render_to_terminal(self.line_buffer[self.view_offset:])
-                    self.line_buffer[bottom_line_idx] = prev
-
+                    self._render()
 
 ##########################################
 #               The CLI interface        #
