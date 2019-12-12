@@ -841,7 +841,7 @@ class UjiView(object):
                            lambda m: f'$BOLD$BG_BRIGHT_CYAN{m.group(2)}{" " * (80 - len(m.group(1)) - len(m.group(2)))}$RESET', l)
 
                 # checkboxes [ ], [x] or [X]
-                l = re.sub(r'^(- \[[ xX]\] )(.*)', rf'$GREEN\1\2', l)
+                l = re.sub(r'^\s*(- \[[ xX]\] )(.*)', rf'$GREEN\1\2', l)
 
             rendered.append(Colors.format(l))
 
