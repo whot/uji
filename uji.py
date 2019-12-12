@@ -914,7 +914,7 @@ class UjiView(object):
             '<SPACE>': self.page_down,
             'n': self.next,
             'p': self.previous,
-            'm': self.mark,
+            't': self.toggle,
             'u': self.upload,
         }
 
@@ -964,6 +964,26 @@ class UjiView(object):
         self.writeout()
         self._redraw()
 
+    def unmark(self):
+        line = self.lines[self.cursor_offset]
+        if not self.is_checkbox(line):
+            return
+
+        line = re.sub(r'^(\s*)- \[[xX]\](.*)', r'\1- [ ]\2', line)
+        self.lines[self.cursor_offset] = line
+        self.writeout()
+        self._redraw()
+
+    def toggle(self):
+        line = self.lines[self.cursor_offset]
+        if not self.is_checkbox(line):
+            return
+
+        if re.match(r'^(\s*)- \[ \](.*)', line):
+            self.mark()
+        else:
+            self.unmark()
+
     def upload(self):
         line = self.lines[self.cursor_offset]
         if not self.is_checkbox(line) or "📎" not in line:
@@ -998,7 +1018,7 @@ class UjiView(object):
 
     @property
     def statusline(self):
-        return Colors.format(f'$BOLD--- (j) up (k) down (n) next (p) previous (m) mark (u) upload (q) quit')
+        return Colors.format(f'$BOLD--- (j) up (k) down (n) next (p) previous (t) toggle (u) upload (q) quit')
 
     def run(self):
         with curtsies.FullscreenWindow() as window:
