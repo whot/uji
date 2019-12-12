@@ -908,7 +908,9 @@ class UjiView(object):
             'k': self.cursor_up,
             '<DOWN>': self.cursor_down,
             '<UP>': self.cursor_up,
-            '<SPACE>': self.page_down
+            '<SPACE>': self.page_down,
+            'n': self.next,
+            'p': self.previous,
         }
 
         try:
@@ -931,6 +933,18 @@ class UjiView(object):
 
     def page_down(self):
         self._update_view(self.view_offset + self.window.height)
+
+    def next(self):
+        for idx, l in enumerate(self.lines[self.cursor_offset + 1:]):
+            if l.startswith('- ['):
+                self._update_cursor(self.cursor_offset + 1 + idx)
+                break
+
+    def previous(self):
+        for idx, l in reversed(list(enumerate(self.lines[:self.cursor_offset]))):
+            if l.startswith('- ['):
+                self._update_cursor(idx)
+                break
 
     def run(self):
         with curtsies.FullscreenWindow() as window:
