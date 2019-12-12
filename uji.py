@@ -806,8 +806,9 @@ class UjiView(object):
         # we keep the lines from the source file separate from the rendered
         # ones, the rendered ones are throwaways
         self.lines = open(md).readlines()
-        self.rendered = self._render_markdown(self.lines)
         self.stop = False
+        self.view_offset = 0
+        self.cursor_offset = 0
 
     def _render_markdown(self, lines):
         in_code_section = False
@@ -855,8 +856,6 @@ class UjiView(object):
         return rendered
 
     def _init_buffer(self, window, lines):
-        self.view_offset = 0
-        self.cursor_offset = 0
         # extra height so we can scroll off the bottom
         # fixed width because we don't handle resizes
         self.line_buffer = curtsies.FSArray(len(lines) + window.height, 256)
@@ -911,6 +910,7 @@ class UjiView(object):
             '<SPACE>': self.page_down,
             'n': self.next,
             'p': self.previous,
+            'm': self.mark,
         }
 
         try:
@@ -946,11 +946,34 @@ class UjiView(object):
                 self._update_cursor(idx)
                 break
 
+    def is_checkbox(self, line):
+        return re.match(r'^\s*- \[[ xX]\].*', line) is not None
+
+    def mark(self):
+        line = self.lines[self.cursor_offset]
+        if not self.is_checkbox(line):
+            return
+
+        line = re.sub(r'^(\s*)- \[ \](.*)', r'\1- [x]\2', line)
+        self.lines[self.cursor_offset] = line
+        self.writeout()
+        self._redraw()
+
+
+    def writeout(self):
+        with open(self.mdfile, 'w') as fd:
+            fd.write(''.join(self.lines))
+        self.repo.index.add([os.fspath(self.mdfile)])
+
+    def _redraw(self):
+        self.rendered = self._render_markdown(self.lines)
+        self._init_buffer(self.window, self.lines)
+        self._update_cursor(self.cursor_offset)
+
     def run(self):
         with curtsies.FullscreenWindow() as window:
             self.window = window
-            self._init_buffer(window, self.lines)
-            self._update_cursor(self.cursor_offset)
+            self._redraw()
             with curtsies.Input() as input_generator:
                 window.render_to_terminal(self.line_buffer[self.view_offset:])
                 for c in input_generator:
