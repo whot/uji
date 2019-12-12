@@ -164,8 +164,8 @@ test_keyboard:
 test_external_keyboards:
   type: test
   filter:
-    device: keyboard
-    integration: external
+    device: [keyboard]
+    integration: [external]
   tests:
     - keyboard works after unplug + plug
 
@@ -173,8 +173,8 @@ test_external_keyboards:
 test_usb_hid:
   type: test
   filter:
-    device: keyboard
-    bus: USB
+    device: [keyboard]
+    bus: [USB]
   tests:
     - verify hid report descriptor parses with `hid-parse`
 
