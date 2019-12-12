@@ -846,12 +846,16 @@ class UjiView(object):
             rendered.append(Colors.format(l))
 
         # poor man's header section detection
-        for idx, l in list(enumerate(rendered[:-1])):
-            nextline = rendered[idx + 1]
-            if nextline[:3] in ['===', '---', '...', '___']:
-                filler = ' ' * (80 - len(l))
-                rendered[idx] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{l}$BOLD$BG_BRIGHT_CYAN{filler}')
-                rendered[idx + 1] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{nextline}$BOLD$BG_BRIGHT_CYAN{filler}')
+        # we check against the original lines - in case we have markdown in
+        # the header the string lengths may not match up otherwise
+        for idx, l in list(enumerate(lines[:-1])):
+            nextline = lines[idx + 1]
+            if re.match(r'^[=\-._]{3,}$', nextline) and len(l) == len(nextline):
+                r1 = rendered[idx]
+                r2 = rendered[idx + 1]
+                filler = ' ' * (80 - len(r1))
+                rendered[idx] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{r1}$BOLD$BG_BRIGHT_CYAN{filler}')
+                rendered[idx + 1] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{r2}$BOLD$BG_BRIGHT_CYAN{filler}')
 
         return rendered
 
