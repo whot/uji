@@ -72,7 +72,7 @@ configuration.
 ```
 $ mkdir my-test-results && cd my-test-results
 $ git init
-$ wget -o mypackage.yaml https://github.com/whot/uji/tree/master/examples/example.yaml
+$ wget -o mypackage.yaml https://raw.githubusercontent.com/whot/uji/master/examples/example.yaml
 ```
 
 Now you're set up. Edit the `mypackage.yaml` file and add your tests.
