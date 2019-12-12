@@ -25,6 +25,7 @@
 
 import click
 import collections
+import curtsies
 import logging
 import io
 import yaml
@@ -779,6 +780,126 @@ class UjiNew(object):
                     self.repo.index.add([os.fspath(c.path)])
 
 
+class UjiView(object):
+    CURSOR = '🡆  '
+
+    def __init__(self, directory):
+        try:
+            self.repo = git.Repo(search_parent_directories=True)
+        except git.exc.InvalidGitRepositoryError:
+            logger.critical('uji must be run from within a git tree')
+            sys.exit(1)
+
+        mds = Path(directory).glob('*.md')
+        if not mds:
+            raise ValueError(f'Cannot find a markdown file in {directory}')
+        else:
+            md = next(mds)
+            try:
+                next(mds)
+                logger.warning('Multiple markdown files found, using "{md}"')
+            except StopIteration:
+                pass
+        self.mdfile = md
+        self.lines = self._render_markdown(md)
+        self.stop = False
+
+    def _render_markdown(self, sourcefile):
+        # FIXME: actually render here
+        return [l.strip() for l in open(sourcefile).readlines()]
+
+    def _init_buffer(self, window, lines):
+        self.view_offset = 0
+        self.cursor_offset = 0
+        # extra height so we can scroll off the bottom
+        # fixed width because we don't handle resizes
+        self.line_buffer = curtsies.FSArray(len(lines) + window.height, 256)
+
+        curlen = len(self.CURSOR)
+        for idx, l in enumerate(self.lines):
+            msg = curtsies.fmtstr(l)
+            self.line_buffer[idx, curlen:msg.width + curlen] = [msg]
+
+    def _update_cursor(self, new_position):
+        if new_position < 0:
+            new_position = 0
+        elif new_position >= len(self.lines):
+            new_position = len(self.lines) - 1
+
+        if new_position == self.cursor_offset:
+            return
+
+        curlen = len(self.CURSOR)
+        self.line_buffer[self.cursor_offset, 0:curlen] = [' ' * curlen]
+        self.cursor_offset = new_position
+        self.line_buffer[self.cursor_offset, 0:curlen] = [self.CURSOR]
+
+        if self.cursor_offset > self.view_offset + self.window.height:
+            self._update_view(self.view_offset + self.window.height // 2)
+        elif self.cursor_offset < self.view_offset:
+            self._update_view(self.view_offset - self.window.height // 2)
+
+    def _update_view(self, new_position):
+        if new_position < 0:
+            new_position = 0
+        elif new_position > len(self.lines) - self.window.height // 2:
+            new_position = len(self.lines) - self.window.height // 2
+
+        if new_position == self.view_offset:
+            return
+
+        self.view_offset = new_position
+        if self.cursor_offset < self.view_offset:
+            self._update_cursor(self.view_offset)
+        elif self.cursor_offset > self.view_offset + self.window.height:
+            self._update_cursor(self.view_offset + self.window.height)
+
+    def _handle_input(self, window, c):
+        mapping = {
+            '<ESC>': self.quit,
+            'q': self.quit,
+            'j': self.cursor_down,
+            'k': self.cursor_up,
+            '<DOWN>': self.cursor_down,
+            '<UP>': self.cursor_up,
+            '<SPACE>': self.page_down
+        }
+
+        try:
+            func = mapping[c]
+        except KeyError:
+            pass
+        else:
+            func()
+
+        return False
+
+    def quit(self):
+        self.stop = True
+
+    def cursor_down(self):
+        self._update_cursor(self.cursor_offset + 1)
+
+    def cursor_up(self):
+        self._update_cursor(self.cursor_offset - 1)
+
+    def page_down(self):
+        self._update_view(self.view_offset + self.window.height)
+
+    def run(self):
+        with curtsies.FullscreenWindow() as window:
+            self.window = window
+            self._init_buffer(window, self.lines)
+            self._update_cursor(self.cursor_offset)
+            with curtsies.Input() as input_generator:
+                window.render_to_terminal(self.line_buffer[self.view_offset:])
+                for c in input_generator:
+                    self._handle_input(window, c)
+                    if self.stop:
+                        break
+                    window.render_to_terminal(self.line_buffer[self.view_offset:])
+
+
 ##########################################
 #               The CLI interface        #
 ##########################################
@@ -808,6 +929,15 @@ def new(template, directory):
         UjiNew(template, directory).generate()
     except YamlError as e:
         logger.critical(f'Failed to parse YAML file: {e}')
+
+
+# subcommand: uji view
+@uji.command()
+@click.argument('directory',
+                type=click.Path(file_okay=False, dir_okay=True, exists=True))
+def view(directory):
+    '''View and update test logs in DIRECTORY'''
+    UjiView(directory).run()
 
 
 def main(args=sys.argv):
