@@ -993,6 +993,10 @@ class UjiView(object):
         self._init_buffer(self.window, self.lines)
         self._update_cursor(self.cursor_offset)
 
+    @property
+    def statusline(self):
+        return Colors.format(f'$BOLD--- (j) up (k) down (n) next (p) previous (m) mark (u) upload (q) quit')
+
     def run(self):
         with curtsies.FullscreenWindow() as window:
             self.window = window
@@ -1003,7 +1007,15 @@ class UjiView(object):
                     self._handle_input(window, c)
                     if self.stop:
                         break
+
+                    # easiest to just swap the last line with our status line
+                    # than figuring out how to to this properl. curties doesn't
+                    # have a "draw on bottom line" method
+                    bottom_line_idx = self.view_offset + window.height - 1
+                    prev = self.line_buffer[bottom_line_idx]
+                    self.line_buffer[bottom_line_idx] = self.statusline
                     window.render_to_terminal(self.line_buffer[self.view_offset:])
+                    self.line_buffer[bottom_line_idx] = prev
 
 
 ##########################################
