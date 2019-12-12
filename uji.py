@@ -938,13 +938,13 @@ class UjiView(object):
 
     def next(self):
         for idx, l in enumerate(self.lines[self.cursor_offset + 1:]):
-            if l.startswith('- ['):
+            if self.is_checkbox(l):
                 self._update_cursor(self.cursor_offset + 1 + idx)
                 break
 
     def previous(self):
         for idx, l in reversed(list(enumerate(self.lines[:self.cursor_offset]))):
-            if l.startswith('- ['):
+            if self.is_checkbox(l):
                 self._update_cursor(idx)
                 break
 
