@@ -30,6 +30,7 @@ import logging
 import io
 import yaml
 import time
+import re
 import sys
 import git
 import os
@@ -56,6 +57,7 @@ class Colors:
     WHITE = '\033[97m'
     RESET = '\033[0m'
     BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
     BG_BLACK = '\u001b[40m'
     BG_RED = '\u001b[41m'
     BG_GREEN = '\u001b[42m'
@@ -801,12 +803,56 @@ class UjiView(object):
             except StopIteration:
                 pass
         self.mdfile = md
-        self.lines = self._render_markdown(md)
+        # we keep the lines from the source file separate from the rendered
+        # ones, the rendered ones are throwaways
+        self.lines = open(md).readlines()
+        self.rendered = self._render_markdown(self.lines)
         self.stop = False
 
-    def _render_markdown(self, sourcefile):
-        # FIXME: actually render here
-        return [l.strip() for l in open(sourcefile).readlines()]
+    def _render_markdown(self, lines):
+        in_code_section = False
+
+        rendered = []
+
+        for l in lines:
+            if l.startswith('```'):
+                in_code_section = not in_code_section
+                l = f'$BG_BRIGHT_YELLOW {" " * 80}$RESET'
+            elif in_code_section:
+                l = l[:-1]  # drop trailing \n
+                filler = ' ' * (80 - len(l))
+                l = f'$BG_BRIGHT_YELLOW {l}{filler}$RESET'
+            else:
+                l = l.strip()
+                # bold
+                l = re.sub(r'\*\*([^*]*)\*\*', rf'$BOLD\1$RESET', l)
+                # italic
+                l = re.sub(r'([^*])\*([^*]*)\*([^*])', rf'\1$UNDERLINE\2$RESET\3', l)
+                # links
+                l = re.sub(r'\[([^\[(]*)\]\(.*\)', rf'$UNDERLINE$BLUE\1$RESET', l)
+                # inline code
+                l = re.sub(r'`([^`]*)`', rf'$RED\1$RESET', l)
+
+                # ###-style headers
+                # we're stripping the ## here and thus need to adjust the
+                # filler width
+                l = re.sub(r'^(#{1,}\s?)(.*)',
+                           lambda m: f'$BOLD$BG_BRIGHT_CYAN{m.group(2)}{" " * (80 - len(m.group(1)) - len(m.group(2)))}$RESET', l)
+
+                # checkboxes [ ], [x] or [X]
+                l = re.sub(r'^(- \[[ xX]\] )(.*)', rf'$GREEN\1\2', l)
+
+            rendered.append(Colors.format(l))
+
+        # poor man's header section detection
+        for idx, l in list(enumerate(rendered[:-1])):
+            nextline = rendered[idx + 1]
+            if nextline[:3] in ['===', '---', '...', '___']:
+                filler = ' ' * (80 - len(l))
+                rendered[idx] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{l}$BOLD$BG_BRIGHT_CYAN{filler}')
+                rendered[idx + 1] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{nextline}$BOLD$BG_BRIGHT_CYAN{filler}')
+
+        return rendered
 
     def _init_buffer(self, window, lines):
         self.view_offset = 0
@@ -816,7 +862,7 @@ class UjiView(object):
         self.line_buffer = curtsies.FSArray(len(lines) + window.height, 256)
 
         curlen = len(self.CURSOR)
-        for idx, l in enumerate(self.lines):
+        for idx, l in enumerate(self.rendered):
             msg = curtsies.fmtstr(l)
             self.line_buffer[idx, curlen:msg.width + curlen] = [msg]
 
