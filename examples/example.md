@@ -41,7 +41,8 @@ Again, a set of tests with a description as h3 section. uji doesn't care
 - you
 - have
 - a list here
-or any other form or markup.
+
+or any other *form* ~of~ `markup`.
 
 - [ ] the tests themselves must be checkboxes though
 - [ ] file [`/path/to/file`](...)
