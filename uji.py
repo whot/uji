@@ -1048,7 +1048,7 @@ class UjiView(object):
 
     @property
     def statusline(self):
-        return Colors.format(f'$BOLD--- (j) up (k) down (n) next (p) previous (t) toggle (u) upload (e) edit (q) quit')
+        return Colors.format(f'$BOLD--- (j) up (k) down (n)ext (p)revious (t)oggle (u)pload (e)dit (q)uit')
 
     def run(self):
         with curtsies.FullscreenWindow() as window:
