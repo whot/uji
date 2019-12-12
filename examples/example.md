@@ -61,9 +61,9 @@ Test cases are grouped in the same way too. Tests without description first:
 
 ### Custom test
 
- Tests with description afterward
+Tests with description afterward
 
- - [ ] tried turning it on and off again
+- [ ] tried turning it on and off again
 
 
 Actor 2 name
@@ -73,9 +73,9 @@ The tests are repeated by actor depending on the filters.
 
 ### Custom test
 
- Tests with description afterward
+Tests with description afterward
 
- - [ ] tried turning it on and off again
+- [ ] tried turning it on and off again
 
 Other Notes
 ===========
