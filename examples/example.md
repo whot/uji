@@ -15,6 +15,14 @@ uji test looks at for data.
 The content of this section is what is described in the section(s)
  `file:` of the yaml file(s).
 
+And here is some code:
+```
+int main(void) {
+        printf("Hello World");
+        return 1;
+}
+```
+
 Generic
 -------
 
