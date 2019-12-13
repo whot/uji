@@ -950,6 +950,7 @@ class UjiView(object):
 
     def quit(self):
         self.stop = True
+        self.repo.index.commit('uji view changes')
 
     def cursor_down(self):
         self._update_cursor(self.cursor_offset + 1)
