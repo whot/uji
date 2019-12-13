@@ -816,6 +816,7 @@ class UjiView(object):
         self.view_offset = 0
         self.cursor_offset = 0
         self.error = None
+        self.show_filename_enabled = True
 
         # curtsies doesn't handle bg/fg properly, so we hack it up this way
         def handler(signal, frame):
@@ -844,7 +845,11 @@ class UjiView(object):
                 # italic
                 l = re.sub(r'([^*])\*([^*]*)\*([^*])', rf'\1$UNDERLINE\2$RESET\3', l)
                 # links
-                l = re.sub(r'\[([^\[(]*)\]\(.*\)', rf'$UNDERLINE$BLUE\1$RESET', l)
+                expr = r'\[([^\[(]*)\]\((.*)\)'
+                if self.show_filename_enabled:
+                    l = re.sub(expr, rf'$UNDERLINE$BLUE\1$RESET', l)
+                else:
+                    l = re.sub(expr, rf'$UNDERLINE$BLUE\2$RESET', l)
                 # inline code
                 l = re.sub(r'`([^`]*)`', rf'$RED\1$RESET', l)
 
@@ -931,6 +936,7 @@ class UjiView(object):
             't': self.toggle,
             'u': self.upload,
             'e': self.editor,
+            'f': self.show_filenames,
         }
 
         try:
@@ -1032,6 +1038,10 @@ class UjiView(object):
         self.lines = open(self.mdfile).readlines()
         self.rerender()
 
+    def show_filenames(self):
+        self.show_filename_enabled = not self.show_filename_enabled
+        self.rerender()
+
     def writeout(self):
         with open(self.mdfile, 'w') as fd:
             fd.write(''.join(self.lines))
@@ -1074,6 +1084,7 @@ class UjiView(object):
             'q': 'quit',
             't': 'toggle',
             'u': 'upload',
+            'f': 'show filenames',
         }
 
         statusline = ['$BOLD ---']
