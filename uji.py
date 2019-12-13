@@ -31,6 +31,7 @@ import io
 import yaml
 import time
 import re
+import signal
 import sys
 import git
 import os
@@ -811,9 +812,18 @@ class UjiView(object):
         # ones, the rendered ones are throwaways
         self.lines = open(md).readlines()
         self.stop = False
+        self.restart = True
         self.view_offset = 0
         self.cursor_offset = 0
         self.error = None
+
+        # curtsies doesn't handle bg/fg properly, so we hack it up this way
+        def handler(signal, frame):
+            self.stop = True
+            self.restart = True
+            print('\033c')
+            print('Press enter to re-render')
+        signal.signal(signal.SIGCONT, handler)
 
     def _render_markdown(self, lines):
         in_code_section = False
@@ -1085,17 +1095,20 @@ class UjiView(object):
         return Colors.format(' '.join(statusline))
 
     def run(self):
-        with curtsies.FullscreenWindow() as window:
-            self.window = window
-            self._redraw()
-            with curtsies.Input() as input_generator:
-                self._render()
-                for c in input_generator:
-                    self._handle_input(window, c)
-                    if self.stop:
-                        break
-
+        while self.restart:
+            self.stop = False
+            self.restart = False
+            with curtsies.FullscreenWindow() as window:
+                self.window = window
+                self._redraw()
+                with curtsies.Input() as input_generator:
                     self._render()
+                    for c in input_generator:
+                        self._handle_input(window, c)
+                        if self.stop:
+                            break
+
+                        self._render()
 
 
 def uji_setup(directory):
