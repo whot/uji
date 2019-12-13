@@ -591,12 +591,14 @@ class UjiNew(object):
             print(self.output.getvalue(), file=fd)
 
         self.repo.index.add([os.fspath(outfile)])
+        self.repo.index.commit(f'New uji test run - {self.target_directory}')
 
         print(f'Your test records and log files are')
         print(f'  {self.target_directory}/')
         for file in Path(self.target_directory).glob("**/*"):
             print(f'  {file}')
-        print(f'Run "git commit" to commit the changes, or "git reset" to throw them away')
+
+        print(f'Run "git reset HEAD~" to throw them away')
 
     def _validate(self):
         try:
@@ -1158,8 +1160,6 @@ def uji_setup(directory):
           To start a new test set:
               cd {directory}
               uji new {yamlfile.name}
-              git commit -am 'New test run for {directory.name}'
-
               uji view {yamlfile.name}-<date>
           '''))
 
