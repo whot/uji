@@ -1051,7 +1051,35 @@ class UjiView(object):
     def statusline(self):
         if self.error:
             return Colors.format(f'$RED{self.error}')
-        return Colors.format(f'$BOLD--- (j) up (k) down (n)ext (p)revious (t)oggle (u)pload (e)dit (q)uit')
+
+        commands = {
+            'j': 'up',
+            'k': 'down',
+            'n': 'next',
+            'p': 'previous',
+            'e': 'edit',
+            'q': 'quit',
+            't': 'toggle',
+            'u': 'upload',
+        }
+
+        statusline = ['$BOLD ---']
+        for k, v in commands.items():
+            if v[0] == k:
+                s = f'({k}){v[1:]}'
+            else:
+                s = f'({k}) {v}'
+
+            # gray out toggle/upload for non-checkboxes
+            if k == 't' or k == 'u':
+                line = self.lines[self.cursor_offset]
+                if (not self.is_checkbox(line) or
+                        (k == 'u' and '📎' not in line)):
+                    s = f'$LIGHT_GRAY{s}'
+            statusline.append(f'$BOLD{s}$RESET')
+
+        statusline.append('$BOLD ---')
+        return Colors.format(' '.join(statusline))
 
     def run(self):
         with curtsies.FullscreenWindow() as window:
