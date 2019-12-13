@@ -40,3 +40,4 @@ License
    use-cases
    installation
    quickstart
+   tools
