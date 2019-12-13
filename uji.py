@@ -1015,7 +1015,7 @@ class UjiView(object):
 
         from subprocess import call
 
-        call([editor, self.mdfile])
+        call([editor, self.mdfile, f'+{self.cursor_offset + 1}'])
         self.lines = open(self.mdfile).readlines()
         self.rerender()
 
