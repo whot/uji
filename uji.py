@@ -783,7 +783,7 @@ class UjiNew(object):
 
 
 class UjiView(object):
-    CURSOR = '🡆  '
+    CURSOR = '⇒ '
 
     def __init__(self, directory):
         try:
