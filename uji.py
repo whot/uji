@@ -794,7 +794,7 @@ def uji(verbose):
         2: logging.DEBUG,
     }
 
-    logger.setLevel(verbose_levels.get(verbose, 2))
+    logger.setLevel(verbose_levels.get(verbose, 0))
     # all the actual work is done in the subcommands
 
 
