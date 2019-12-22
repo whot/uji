@@ -28,30 +28,46 @@ This checklist has some specific properties:
 - the tests can be divided up in to sets and each hw will run some sets
 - a single person is unlikely to be able to test all of them in one go
 - it may not be possible to tick off all items every time
-- this list will be the same every time (though it may of course grow)
+- this list will be the same every time
+
+.. note:: New tests may be added in the future or existing tests may change,
+          but that must not affect previously stored test results
 
 
 **uji** provides the tools to generate this checklist and to track the
-completion. The intial setup requires that
+completion.
+
+Initial setup
+=============
+
+The **intial setup** requires that
 
 - the developer creates a ``test-results`` git repository
 - the developer writes the test sets and stores those in the git tree
 
+The ``uji setup`` tool provides the required scaffolding to initialize a git
+repository.
+
+This initial setup must be performed once per target. **uji** merely
+operates with markdown files and the yaml templates, it is up to the
+developer to decide how to collate the results. One git repository per
+package or one git repository for all packages, **uji** doesn't care.
+
+
+Workflow
+========
+
 The workflow for a software release looks like this:
 
-- create a new checklist with ``uji new`` and ``git commit`` that empty
-  checklist
-- log into the first test host (e.g. the AMD one)
+#. ``uji new`` creates a new checklist and commits it to git.
+#. log into the first test host (e.g. the AMD one)
 
-  - ``git clone`` the ``test-results`` repository
-  - Use ``uji view``, then ``git commit`` and ``git push`` those changes
+   - ``git clone`` the ``test-results`` repository
+   - Use ``uji view`` to tick off items and/or upload files
+   - Use ``$EDITOR``, ``git commit`` to make manual annotations or other changes
+   - ``git push`` the changes upstream
 
-- log into the second test host (e.g. the NVIDIA one)
-
-  - ``git clone`` the ``test-results`` repository
-  - Use ``uji view``, then ``git commit`` and ``git push`` those changes
-
-- repeat for every host
+#. repeat for every host
 
 .. note:: The use of ``uji view`` is optional, you can edit the markdown
           directly.

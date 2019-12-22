@@ -3,7 +3,7 @@
 uji setup
 =========
 
-**uji setup** is the tool to set up a directory for keeping uji test logs
+``uji setup`` is the tool to set up a directory for keeping uji test logs
 and test cases. This tool only needs to run once per project. It creates the
 directory, copies a stub ``README.md`` and an example ``yaml`` file into
 place.
@@ -37,7 +37,7 @@ we recommend that the YAML files are placed in a ``templates/`` folder.
 uji new
 =======
 
-**uji new** is the tool to create a new test run. This must be run within a
+``uji new`` is the tool to create a new test run. This must be run within a
 **uji** directory (see :ref:`uji-setup`).
 
 ::
@@ -63,10 +63,10 @@ structure that resembles the actors and tests specified in the test
 templates. This allows you to attach multiple versions of the same file
 (``dmesg`` in the example above) to a test log.
 
-The second argument to **uji new** is optional - where missing a
-timestamp-based folder naming approach is used.
+The second argument to ``uji new`` is optional, if missing **uji** will
+generate a folder using the current date (e.g. ``myproject-20191224.0``).
 
-**uji new** commits that new directory to the git tree, so you will be ready
+``uji new`` commits that new directory to the git tree, so you will be ready
 to go immediately.
 
 .. _uji-view:
@@ -75,7 +75,7 @@ uji view
 ========
 
 **uji view** is an interactive markdown viewer with the functionality to
-make uji test logs easy to handle.
+make checklists easy to handle.
 
 ::
 
