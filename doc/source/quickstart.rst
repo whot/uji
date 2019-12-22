@@ -7,14 +7,14 @@ Install uji::
 
   pip install --user git+https://github.com/whot/uji.git
 
-Set up the first todo list with a test template from the examples::
+Set up the first checklist with a test template from the examples::
 
   uji setup my-test-results
   cd my-test-results
   uji new mypackage.yaml
-  git commit -m 'mypackage todo list'
+  git commit -m 'mypackage checklist'
 
-Work on the todo list::
+Work on the checklist::
 
   uji view mypackage-*/
   git commit -m 'updated tests'

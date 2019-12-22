@@ -4,7 +4,7 @@ Example use case
 ----------------
 
 Imagine a software release or update that requires a number of manual tests
-to completion. Such a todo list could look like this::
+to completion. Such a checklist could look like this::
 
     AMD
     - check suspend/resume
@@ -22,7 +22,7 @@ to completion. Such a todo list could look like this::
     MGA
     - check display lights up on MGA card
 
-This todo list has some specific properties:
+This checklist has some specific properties:
 
 - **most** of the tests must be run on multiple hardware entities
 - the tests can be divided up in to sets and each hw will run some sets
@@ -31,7 +31,7 @@ This todo list has some specific properties:
 - this list will be the same every time (though it may of course grow)
 
 
-**uji** provides the tools to generate this todo list and to track the
+**uji** provides the tools to generate this checklist and to track the
 completion. The intial setup requires that
 
 - the developer creates a ``test-results`` git repository
@@ -39,7 +39,8 @@ completion. The intial setup requires that
 
 The workflow for a software release looks like this:
 
-- create a new todo list with ``uji new`` and ``git commit`` that empty todo list
+- create a new checklist with ``uji new`` and ``git commit`` that empty
+  checklist
 - log into the first test host (e.g. the AMD one)
 
   - ``git clone`` the ``test-results`` repository
@@ -55,7 +56,7 @@ The workflow for a software release looks like this:
 .. note:: The use of ``uji view`` is optional, you can edit the markdown
           directly.
 
-The idea is that a **new todo list is generated** for each
+The idea is that a **new checklist is generated** for each
 software update, then the items are ticked off one-by-one as the hw is
 available and the test is completed. Since the data is in markdown and
 stored in git, it is trivial to clone the results to the target host, edit

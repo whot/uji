@@ -1,8 +1,18 @@
-Uji - todo list generator and tracking system
+Uji - checklist generator and tracking system
 =============================================
 
-uji is a tool to generate 'todo lists' from template files and hold on to
+uji is a tool to generate checklists from template files and hold on to
 those lists forever or until the cows come home, whichever happens later.
+
+uji is useful for cases where a user has
+- large checklists with overlapping items, e.g. the same sets of test to be
+  performed on different hardware
+- the checklists are recurring, e.g. they need to be performed on every
+  package update
+- not all checklist items will be ticked every time but the user needs to
+  remember which ones were ticked off
+- there is other free-form information to be stored alongside the
+  checklists
 
 The main purpose of uji is to simplify the answer to "Wait, didn't I test
 this?"
@@ -32,9 +42,9 @@ Use case
 ========
 
 Upgrading software packages usually requires multiple manual tests. Ideally
-you have a todo list to tick off the things you tested. Next time you
-upgrade that same package, the same todo list applies. Ideally you tick off
-all the todo list items every time but we both know you don't. Maybe
+you have a checklist to tick off the things you tested. Next time you
+upgrade that same package, the same checklist applies. Ideally you tick off
+all the checklist items every time but we both know you don't. Maybe
 hardware is missing, or the moon phase is wrong for tedious work, or, well,
 so many reasons.
 
