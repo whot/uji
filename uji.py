@@ -26,18 +26,18 @@
 import click
 import collections
 import curtsies
-import logging
+import git
 import io
-import yaml
-import time
+import logging
+import os
 import re
 import signal
 import sys
-import git
-import os
-from textwrap import dedent
+import time
+import yaml
 from copy import deepcopy
 from pathlib import Path
+from textwrap import dedent
 
 
 class Colors:
