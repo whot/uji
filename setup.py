@@ -63,7 +63,7 @@ class ManPageGenerator(install):
 
 setup(name='uji',
       version='0.1',
-      description='Test log tracker',
+      description='Checklist tracker',
       long_description=open('README.md', 'r').read(),
       long_description_content_type='text/markdown',
       url='http://github.com/whot/uji',
