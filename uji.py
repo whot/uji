@@ -32,6 +32,8 @@ import logging
 import os
 import re
 import signal
+import stat
+import subprocess
 import sys
 import time
 import yaml
@@ -700,6 +702,7 @@ class UjiNew(object):
 
         self._write_md_file()
         self._generate_test_files()
+        self._generate_check_file()
 
     def _link_tests_with_actors(self, tests):
         all_tests = []
@@ -785,6 +788,19 @@ class UjiNew(object):
                         print(f'run: {c.run}', file=fd)
                     self.repo.index.add([os.fspath(c.path)])
 
+    def _generate_check_file(self):
+        precheck = Path(self.target_directory) / 'uji-check'
+        with open(precheck, 'w') as fd:
+            print(dedent(f'''\
+                    #!/bin/sh
+                    #
+                    # This file is automatically executed by uji view.
+                    # Return a nonzero exit code if any requirements fail.
+
+                    exit 0
+                    '''), file=fd)
+            precheck.chmod(precheck.stat().st_mode | stat.S_IXUSR)
+
 
 class UjiView(object):
     CURSOR = '⇒ '
@@ -808,6 +824,7 @@ class UjiView(object):
                 pass
         self.directory = Path(directory)
         self.mdfile = md
+
         # we keep the lines from the source file separate from the rendered
         # ones, the rendered ones are throwaways
         self.lines = open(md).readlines()
@@ -1033,9 +1050,7 @@ class UjiView(object):
         if not editor:
             return
 
-        from subprocess import call
-
-        call([editor, self.mdfile, f'+{self.cursor_offset + 1}'])
+        subprocess.call([editor, self.mdfile, f'+{self.cursor_offset + 1}'])
         self.lines = open(self.mdfile).readlines()
         self.rerender()
 
@@ -1189,6 +1204,21 @@ def uji_setup(directory):
           '''))
 
 
+def uji_check(directory):
+    precheck = Path(directory) / 'uji-check'
+    if not precheck.exists():
+        return
+
+    try:
+        subprocess.check_output([os.fspath(precheck)], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        logger.critical(f'uji-check failed with exit code {e.returncode}. Aborting.')
+        if e.output:
+            logger.critical(f'stdout/stderr from the uji-check script:')
+            print(e.output.decode())
+        sys.exit(1)
+
+
 ##########################################
 #               The CLI interface        #
 ##########################################
@@ -1226,17 +1256,27 @@ def new(template, directory):
                 type=click.Path(file_okay=False, dir_okay=True, exists=True))
 def view(directory):
     '''View and update test logs in DIRECTORY'''
+    uji_check(directory)
     UjiView(directory).run()
 
 
 # subcommand: uji setup
-@ uji.command()
+@uji.command()
 @click.argument('directory',
                 type=click.Path(file_okay=False, dir_okay=True, exists=False))
 def setup(directory):
     '''Setup DIRECTORY as new uji test result directory'''
     directory = Path(directory)
     uji_setup(directory)
+
+
+# subcommand: uji check
+@uji.command()
+@click.argument('directory',
+                type=click.Path(file_okay=False, dir_okay=True, exists=False))
+def check(directory):
+    '''Run the uji-check script in DIRECTORY'''
+    uji_check(directory)
 
 
 def main(args=sys.argv):
