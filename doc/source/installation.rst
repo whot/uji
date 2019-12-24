@@ -1,9 +1,9 @@
 Installation
 ------------
 
-**uji** shold be installed directly from git via pip::
+**uji** shold be installed via pip::
 
-  pip install --user git+https://github.com/whot/uji.git
+  pip install --user uji
 
 Installation via pip is recommended as this will install all dependencies as
 well.
@@ -21,4 +21,3 @@ Alternatively, to install a local git checkout: ::
   cd uji
   pip install --user .
 
-**uji** is not yet available on PyPI.

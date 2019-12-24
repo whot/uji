@@ -38,6 +38,9 @@ CLI tools to automate some tasks around maintaining the test files.
 
 "uji" is Indonesian for "test".
 
+See [uji on readthedocs](https://uji.readthedocs.io/en/latest/) for more
+documentation.
+
 Use case
 ========
 
@@ -72,6 +75,13 @@ files in that same directory to figure out where the differences are.
 
 None of this is novel of course, uji is just a commandline wrapper to make
 that proces simpler.
+
+Installation
+============
+
+```
+pip install --user uji
+```
 
 Usage
 =====
@@ -142,6 +152,9 @@ $ git commit -am 'mypackage: test log set done'
 ```
 
 And that's it for now.
+
+See [uji on readthedocs](https://uji.readthedocs.io/en/latest/) for more
+documentation.
 
 License
 =======

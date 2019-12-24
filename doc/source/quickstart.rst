@@ -5,7 +5,7 @@ Quickstart
 
 Install uji::
 
-  pip install --user git+https://github.com/whot/uji.git
+  pip install --user uji
 
 Set up the first checklist with a test template from the examples::
 
