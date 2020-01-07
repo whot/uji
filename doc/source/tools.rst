@@ -111,8 +111,8 @@ Within this viewer, you have several keyboard shortcuts:
 
 .. _uji-check:
 
-uji-check
----------
+uji check
+=========
 
 **uji check** runs the ``uji-check`` file in the given directory.
 
