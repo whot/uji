@@ -593,6 +593,14 @@ class UjiNew(object):
         with open(outfile, 'w') as fd:
             print(self.output.getvalue(), file=fd)
 
+        # symlink to the most recent directory
+        latest = Path('uji-latest')
+        if not latest.exists() or latest.is_symlink():
+            if latest.is_symlink():
+                latest.unlink()
+            latest.symlink_to(self.target_directory)
+            self.repo.index.add([os.fspath(latest)])
+
         self.repo.index.add([os.fspath(outfile)])
         self.repo.index.commit(f'New uji test run - {self.target_directory}')
 

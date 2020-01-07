@@ -66,6 +66,10 @@ templates. This allows you to attach multiple versions of the same file
 The second argument to ``uji new`` is optional, if missing **uji** will
 generate a folder using the current date (e.g. ``myproject-20191224.0``).
 
+.. note:: For convenience, ``uji new`` creates a symlink named
+          ``uji-latest`` that points at the most recent directory created with
+          ``uji new``.
+
 ``uji new`` commits that new directory to the git tree, so you will be ready
 to go immediately.
 
