@@ -16,6 +16,8 @@ SYNOPSIS
 
 **uji view** _directory_
 
+**uji check** _directory_
+
 DESCRIPTION
 ============
 
@@ -99,6 +101,19 @@ Keyboard shortcuts:
 
 *f*
 : toggle filename view
+
+uji check *directory*
+---------------------
+
+**uji check** executes the file *uji-check* within the given *directory*.
+This file is created by **uji new** and may contain various checks you need
+to run before actually testing. For example, you may want to put a kernel
+version check to ensure **uji** test runs are run on the correct machines.
+
+The exit status of *uji-check* determines whether **uji check** succeeds.
+
+**uji check** is automatically run by **uji view** on startup.
+
 
 SEE ALSO
 ========
