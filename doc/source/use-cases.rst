@@ -16,8 +16,8 @@ to completion. Such a checklist could look like this::
     - check installation/deinstallation of binary driver
 
     INTEL
-    - check suspend/resume on Intel card
-    - check GL rendering on Intel card
+    - check suspend/resume
+    - check GL rendering
 
     MGA
     - check display lights up on MGA card
@@ -28,7 +28,7 @@ This checklist has some specific properties:
 - the tests can be divided up in to sets and each hw will run some sets
 - a single person is unlikely to be able to test all of them in one go
 - it may not be possible to tick off all items every time
-- this list will be the same every time
+- this checklist will basically be the same one next time
 
 .. note:: New tests may be added in the future or existing tests may change,
           but that must not affect previously stored test results
@@ -42,14 +42,15 @@ Initial setup
 
 The **intial setup** requires that
 
-- the developer creates a ``test-results`` git repository
+- the developer creates a ``test-results`` git repository (or whatever name
+  you want to use)
 - the developer writes the test sets and stores those in the git tree
 
 The ``uji setup`` tool provides the required scaffolding to initialize a git
 repository.
 
-This initial setup must be performed once per target. **uji** merely
-operates with markdown files and the yaml templates, it is up to the
+This initial setup must be performed once per test collection. **uji**
+merely operates with markdown files and the yaml templates, it is up to the
 developer to decide how to collate the results. One git repository per
 package or one git repository for all packages, **uji** doesn't care.
 
@@ -59,7 +60,7 @@ Workflow
 
 The workflow for a software release looks like this:
 
-#. ``uji new`` creates a new checklist and commits it to git.
+#. ``uji new`` creates a new checklist from the templates and commits it to git
 #. log into the first test host (e.g. the AMD one)
 
    - ``git clone`` the ``test-results`` repository

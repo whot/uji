@@ -3,7 +3,7 @@
 uji setup
 =========
 
-``uji setup`` is the tool to set up a directory for keeping uji test logs
+``uji setup`` is the tool to set up a directory for keeping **uji** test logs
 and test cases. This tool only needs to run once per project. It creates the
 directory, copies a stub ``README.md`` and an example ``yaml`` file into
 place.
