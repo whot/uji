@@ -62,7 +62,7 @@ class ManPageGenerator(install):
 
 
 setup(name='uji',
-      version='0.1',
+      version='0.2',
       description='Checklist tracker',
       long_description=open('README.md', 'r').read(),
       long_description_content_type='text/markdown',
