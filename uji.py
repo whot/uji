@@ -820,7 +820,8 @@ class UjiView(object):
             logger.critical('uji must be run from within a git tree')
             sys.exit(1)
 
-        mds = Path(directory).glob('*.md')
+        directory = Path(directory).resolve()
+        mds = directory.glob('*.md')
         if not mds:
             raise ValueError(f'Cannot find a markdown file in {directory}')
         else:
@@ -830,7 +831,7 @@ class UjiView(object):
                 logger.warning('Multiple markdown files found, using "{md}"')
             except StopIteration:
                 pass
-        self.directory = Path(directory)
+        self.directory = directory
         self.mdfile = md
 
         # we keep the lines from the source file separate from the rendered
