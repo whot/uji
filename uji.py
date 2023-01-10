@@ -1164,6 +1164,13 @@ class UjiView(object):
                 else:
                     output.extend(proc.stdout.readlines())
             result = proc.poll()
+        except KeyboardInterrupt:
+            proc.terminate()
+            time.sleep(0.2)
+            if proc.poll() is None:
+                proc.kill()
+            logger.error('execution aborted')
+            return
         except Exception as e:
             logger.error(f'Failed to execute `{command}`: {e}')
             return
