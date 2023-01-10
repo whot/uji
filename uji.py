@@ -430,7 +430,7 @@ class MarkdownFormatter(object):
             self._checkbox(text, indent, symbol='📎')
 
         def checkbox_command(self, text, indent=0):
-            self._checkbox(text, indent, symbol='⍿')
+            self._checkbox(text, indent, symbol='⚙')
 
         def file_attachment(self, filename, path):
             self.checkbox_attachment(f'[`{filename}`]({path})')
@@ -960,6 +960,7 @@ class UjiView(object):
             '<SPACE>': self.page_down,
             'n': self.next,
             'p': self.previous,
+            'r': self.execute_command,
             't': self.toggle,
             'u': self.upload,
             'e': self.editor,
@@ -974,6 +975,10 @@ class UjiView(object):
             func()
 
         return False
+
+    def _insert(self, offset, line):
+        self.lines.insert(offset, line)
+        return offset + 1
 
     def quit(self):
         self.stop = True
@@ -1056,6 +1061,149 @@ class UjiView(object):
         except Exception as e:
             logger.error(f'Failed to copy {filename}: {e}')
 
+    def remove_code_block_content(self, lines, from_offset=0):
+        new_lines = lines[:from_offset + 1]
+        codeblock_offset = -1
+        in_codeblock = False
+        for line in lines[from_offset + 1:]:
+            if in_codeblock:
+                if '```' in line:
+                    in_codeblock = False
+                else:
+                    # remove existing output
+                    continue
+            if codeblock_offset < 0:
+                # find the existing ``` markers
+                if '```' in line:
+                    in_codeblock = True
+                    codeblock_offset = len(new_lines) + 1
+                # new codeblock, enforce our markers, right below cursor_offset
+                if self.is_checkbox(line):
+                    codeblock_offset = self._insert(self.cursor_offset + 1, '```\n', target=new_lines)
+                    self._insert(codeblock_offset, '```\n', target=new_lines)
+            # rest is going to be forwarded as it was
+            new_lines.append(line)
+
+        # return the index where to store the output of the command
+        return new_lines, codeblock_offset
+
+
+    def execute_command(self):
+        line = self.lines[self.cursor_offset]
+        if not self.is_checkbox(line) or "⚙" not in line:
+            return
+
+        # list of regex to deduce the type of command to be run
+        command_re = {
+                'attach': r'^(\s*)- \[.\].* \[`(.*)`\]\((.*)\).*',
+                'human': r'^(\s*)- \[.\].* `(.*)`: <strong>(.*)</strong>$',
+                'single': r'^(\s*)- \[.\].* `(.*)`: `(.*)`$',
+                'multi': r'^(\s*)- \[.\].* `(.*)`:$',
+                'exitcode': r'^(\s*)- \[.\].* `(.*)`$',
+        }
+
+        command_type = None
+        command_match = None
+
+        for type_c, re_c in command_re.items():
+            match = re.match(re_c, line)
+            if match:
+                command_type = type_c
+                command_match = match
+                break
+
+        if command_type is None:
+            logger.error(f'Failed to match run command line: {line}')
+            return
+
+        command = match[2]
+        output = []
+        insert_offset = self.cursor_offset + 1
+        offset = -1
+
+        if command_type == 'multi':
+            self.lines, offset = self.remove_code_block_content(self.lines, self.cursor_offset)
+            self.writeout()
+            self._redraw()
+            self._render()
+
+
+        try:
+            import subprocess
+
+            proc = subprocess.Popen(command, shell=True, universal_newlines=True,
+                                    bufsize=0,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+            while proc.poll() is None:
+                if command_type == 'multi':
+                    line = proc.stdout.readline()
+                    while line:
+                        offset = self._insert(offset, line)
+                        output.append(line)
+                        self.writeout()
+                        self._redraw()
+                        self._render()
+                        line = proc.stdout.readline()
+                else:
+                    output.extend(proc.stdout.readlines())
+            result = proc.poll()
+        except Exception as e:
+            logger.error(f'Failed to execute `{command}`: {e}')
+            return
+
+        lines = proc.stdout.readlines()
+        if command_type == 'multi':
+            for line in lines:
+                offset = self._insert(offset, line)
+            self.writeout()
+            self._redraw()
+            self._render()
+        output.extend(lines)
+
+        # append the return code to the logs
+        indent = len(match[1])
+        result_line = f'{" " * (indent)} - result code: {int(result)}\n'
+
+        # check if the result was already given:
+        res_match = re.match(f'{" " * (indent)} - result code:.*', self.lines[insert_offset])
+        if res_match:
+            self.lines[insert_offset] = result_line
+            insert_offset += 1
+        else:
+            insert_offset = self._insert(insert_offset, result_line)
+
+        if command_type == 'exit_code':
+            # no need to do anything more for exit code
+            pass
+        elif command_type == 'attach':
+            filename = self.directory / match[3]
+            with open(filename, 'w') as f:
+                f.write(''.join(output))
+            self.repo.index.add([os.fspath(filename)])
+        elif command_type == 'single':
+            line = re.sub(r'(.*) `(.*)`:.*\n', r'\1 `\2`:', line)
+            if len(output) == 1:
+                line += f' `{output[0].strip()}`'
+            elif len(output) == 0:
+                line += f' `<no output>`'
+            line += '\n'
+
+            # overwrite the current line to set the output
+            self.lines[self.cursor_offset] = line
+
+            # multi-lines output
+            if len(output) > 1:
+                insert_offset = self._insert(insert_offset, '```\n')
+                for l in output:
+                    insert_offset = self._insert(insert_offset, l)
+                insert_offset = self._insert(insert_offset, '```\n')
+        else:
+            return
+
+        self.mark()
+
+
     def editor(self):
         editor = os.environ.get('EDITOR')
         if not editor:
@@ -1109,6 +1257,7 @@ class UjiView(object):
             'p': 'previous',
             'e': 'edit',
             'q': 'quit',
+            'r': 'run command',
             't': 'toggle',
             'u': 'upload',
             'f': 'show filenames',
@@ -1122,10 +1271,11 @@ class UjiView(object):
                 s = f'({k}) {v}'
 
             # gray out toggle/upload for non-checkboxes
-            if k == 't' or k == 'u':
+            if k in ('t', 'u', 'r'):
                 line = self.lines[self.cursor_offset]
                 if (not self.is_checkbox(line) or
-                        (k == 'u' and '📎' not in line)):
+                        (k == 'u' and '📎' not in line) or
+                        (k == 'r' and '⚙' not in line)):
                     s = f'$LIGHT_GRAY{s}'
             statusline.append(f'$BOLD{s}$RESET')
 
