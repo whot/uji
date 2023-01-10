@@ -975,9 +975,25 @@ class UjiView(object):
 
         return False
 
-    def _insert(self, offset, line):
-        self.lines.insert(offset, line)
-        return offset + 1
+    def _line_split_by_width(self, line, max_len):
+        return [(line[i:i + max_len]) for i in range(0, len(line), max_len)]
+
+    def _insert(self, offset, line, target=None):
+        l = self._sanitize(line)
+        max_len = 250
+
+        if target is None:
+            target = self.lines
+
+        # split our line into max_len-sized chunks
+        lines = self._line_split_by_width(l, max_len)
+
+        # then append them as one line each with trailing newline
+        for l in lines:
+            eol = '\n' if len(l) >= max_len else ''
+            target.insert(offset, l + eol)
+            offset += 1
+        return offset
 
     def quit(self):
         self.stop = True
@@ -1085,6 +1101,8 @@ class UjiView(object):
         # return the index where to store the output of the command
         return new_lines, codeblock_offset
 
+    def _sanitize(self, line):
+        return line.replace('\t', '    ')
 
     def execute_command(self):
         line = self.lines[self.cursor_offset]
@@ -1182,7 +1200,8 @@ class UjiView(object):
         elif command_type == 'single':
             line = re.sub(r'(.*) `(.*)`:.*\n', r'\1 `\2`:', line)
             if len(output) == 1:
-                line += f' `{output[0].strip()}`'
+                l = self._sanitize(output[0].strip())
+                line += f' `{l}`'
             elif len(output) == 0:
                 line += f' `<no output>`'
             line += '\n'
