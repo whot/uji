@@ -1039,7 +1039,7 @@ class UjiView(object):
 
         match = re.match(r'.* \[(.*)\]\((.*)\).*', line)
         if not match:
-            logger.error('Failed to match attachment line: {line}')
+            logger.error(f'Failed to match attachment line: {line}')
             return
 
         # filenames are in `backticks`
