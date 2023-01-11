@@ -1237,6 +1237,11 @@ def uji_check(directory):
 @click.option('-v', '--verbose', count=True, help='increase verbosity')
 @click.option('--quiet', 'verbose', flag_value=0)
 def uji(verbose):
+    '''
+    uji generates checklists from template files and stores those checklists in git.
+
+    To get started, run 'uji setup' followed by 'uji new', then `uji view`.
+    '''
     verbose_levels = {
         0: logging.ERROR,
         1: logging.INFO,
@@ -1252,7 +1257,7 @@ def uji(verbose):
 @click.argument('template', type=click.Path())
 @click.argument('directory', required=False, type=click.Path())
 def new(template, directory):
-    '''Create a new test log directory from a template'''
+    '''Create a new test log directory from a YAML template.'''
     try:
         UjiNew(template, directory).generate()
     except YamlError as e:
