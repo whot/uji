@@ -74,7 +74,7 @@ And if it is and it's still broken - well, you should have the various log
 files in that same directory to figure out where the differences are.
 
 None of this is novel of course, uji is just a commandline wrapper to make
-that proces simpler.
+that process simpler.
 
 Installation
 ============
