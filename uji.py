@@ -574,6 +574,7 @@ class UjiNew(object):
 
         logger.debug(f'target directory is: {self.target_directory}')
         Path(self.target_directory).mkdir()
+        (Path(self.target_directory) / '.uji').touch(exist_ok=True)
 
         self._process()
 
