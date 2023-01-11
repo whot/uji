@@ -1273,9 +1273,26 @@ def new(template, directory):
 # subcommand: uji view
 @uji.command()
 @click.argument('directory',
-                type=click.Path(file_okay=False, dir_okay=True, exists=True))
+                type=click.Path(file_okay=False, dir_okay=True, exists=True),
+                required=False)
 def view(directory):
-    '''View and update test logs in DIRECTORY'''
+    '''
+    View and update test logs in DIRECTORY
+
+    If no directory is given, default to the 'uji-latest' directory
+    symlink created by uji new or the most recently created directory.
+    '''
+    if directory is None:
+        if Path('uji-latest').exists():
+            directory = 'uji-latest'
+        else:
+            dirs = [x for x in Path('.').iterdir() if x.is_dir() and not x.name.startswith('.') and (x / '.uji').exists()]
+            dirs.sort(key=lambda f: os.path.getctime(f), reverse=True)
+            if not dirs:
+                click.echo("Unable to find a matching uji directory")
+                sys.exit(1)
+            directory = dirs[0]
+
     uji_check(directory)
     UjiView(directory).run()
 
