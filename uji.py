@@ -1259,6 +1259,11 @@ def uji(verbose):
 def new(template, directory):
     '''Create a new test log directory from a YAML template.'''
     try:
+        if not Path(template).exists():
+            for suffix in ('.yaml', '.yml'):
+                alternative = Path(f"{template}{suffix}")
+                if alternative.exists():
+                    template = alternative
         UjiNew(template, directory).generate()
     except YamlError as e:
         logger.critical(f'Failed to parse YAML file: {e}')
