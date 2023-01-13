@@ -912,6 +912,14 @@ class UjiView(object):
             print('Press enter to re-render')
         signal.signal(signal.SIGCONT, handler)
 
+    @property
+    def current_line(self) -> str:
+        return self.lines[self.cursor_offset]
+
+    @current_line.setter
+    def current_line(self, value: str) -> None:
+        self.lines[self.cursor_offset] = value
+
     def _render_markdown(self, lines):
         in_code_section = False
 
@@ -1077,27 +1085,27 @@ class UjiView(object):
         return re.match(r'^\s*- \[[ xX]\].*', line) is not None
 
     def mark(self):
-        line = self.lines[self.cursor_offset]
+        line = self.current_line
         if not self.is_checkbox(line):
             return
 
         line = re.sub(r'^(\s*)- \[ \](.*)', r'\1- [x]\2', line)
-        self.lines[self.cursor_offset] = line
+        self.current_line = line
         self.writeout()
         self._redraw()
 
     def unmark(self):
-        line = self.lines[self.cursor_offset]
+        line = self.current_line
         if not self.is_checkbox(line):
             return
 
         line = re.sub(r'^(\s*)- \[[xX]\](.*)', r'\1- [ ]\2', line)
-        self.lines[self.cursor_offset] = line
+        self.current_line = line
         self.writeout()
         self._redraw()
 
     def toggle(self):
-        line = self.lines[self.cursor_offset]
+        line = self.current_line
         if not self.is_checkbox(line):
             return
 
@@ -1109,7 +1117,7 @@ class UjiView(object):
         self.next()
 
     def upload(self):
-        line = self.lines[self.cursor_offset]
+        line = self.current_line
         if not self.is_checkbox(line) or "📎" not in line:
             return
 
@@ -1160,7 +1168,7 @@ class UjiView(object):
         return line.replace('\t', '    ')
 
     def execute_command(self):
-        line = self.lines[self.cursor_offset]
+        line = self.current_line
         if not self.is_checkbox(line) or "⚙" not in line:
             return
 
@@ -1269,7 +1277,7 @@ class UjiView(object):
             line += '\n'
 
             # overwrite the current line to set the output
-            self.lines[self.cursor_offset] = line
+            self.current_line = line
 
             # multi-lines output
             if len(output) > 1:
@@ -1290,7 +1298,7 @@ class UjiView(object):
         '''
         assert prefix in allowed_prefixes  # sanity check only
 
-        line = self.lines[self.cursor_offset]
+        line = self.current_line
         if not self.is_checkbox(line):
             return
 
@@ -1309,7 +1317,7 @@ class UjiView(object):
                 rest_of_line = rest_of_line[len(p):]
 
         line = f'{md_checkbox}{pfmt(prefix)}{rest_of_line}\n'
-        self.lines[self.cursor_offset] = line
+        self.current_line = line
         self.writeout()
         self._redraw()
         # Explicitly passing/failing/skipping means this test is done - manually untoggle if need be
@@ -1402,7 +1410,7 @@ class UjiView(object):
             s = k.short_help
             # gray out toggle/upload for non-checkboxes
             if KeymappingFlags.ONLY_ON_CHECKBOX in k.flags:
-                line = self.lines[self.cursor_offset]
+                line = self.current_line
                 if (not self.is_checkbox(line) or
                         (KeymappingFlags.UPLOAD in k.flags and '📎' not in line) or
                         (KeymappingFlags.EXECUTE in k.flags and '⚙' not in line)):
