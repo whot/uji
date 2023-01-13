@@ -47,6 +47,8 @@
 #            The value must be a list, even if it's just one entry
 #            Where the filter tag is missing, this test is assumed
 #            to be run only once.
+#            If a value starts with ! it's a negative match, i.e.
+#            the tag must NOT be present in the actor.
 #    tests: a list of instruction strings describing the tests to be
 #           performed.
 #    files: a list of files to collect
@@ -177,6 +179,15 @@ test_usb_hid:
     bus: [USB]
   tests:
     - verify hid report descriptor parses with `hid-parse`
+
+# A test to run only on non-USB keyboards
+test_nonusb:
+  type: test
+  filter:
+    device: [keyboard]
+    bus: ["!USB"]  # Note: YAML requires quotes
+  tests:
+    - "bus type for this keyboard is XXX"
 
 # This is a test without a filter, so it will show up in the "Generic"
 # section but not for any specific actor. Good for things you need to
