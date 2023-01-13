@@ -23,6 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import List
+
 import click
 import collections
 import curtsies
@@ -916,15 +918,17 @@ class UjiView(object):
 
         return rendered
 
-    def _init_buffer(self, window, lines):
+    def _init_buffer(self, window: curtsies.FullscreenWindow, content: List[str], cursor: str) -> curtsies.FSArray:
         # extra height so we can scroll off the bottom
         # fixed width because we don't handle resizes
-        self.line_buffer = curtsies.FSArray(len(lines) + window.height, 256)
+        line_buffer = curtsies.FSArray(len(content) + window.height, 256)
 
-        curlen = len(self.CURSOR)
-        for idx, l in enumerate(self.rendered):
+        curlen = len(cursor)
+        for idx, l in enumerate(content):
             msg = curtsies.fmtstr(l)
-            self.line_buffer[idx, curlen:msg.width + curlen] = [msg]
+            line_buffer[idx, curlen:msg.width + curlen] = [msg]
+
+        return line_buffer
 
     def _update_cursor(self, new_position):
         if new_position < 0:
@@ -1260,8 +1264,9 @@ class UjiView(object):
         self.repo.index.add([os.fspath(self.mdfile)])
 
     def _redraw(self):
-        self.rendered = self._render_markdown(self.lines)
-        self._init_buffer(self.window, self.lines)
+        rendered = self._render_markdown(self.lines)
+
+        self.line_buffer = self._init_buffer(self.window, content=rendered, cursor=self.CURSOR)
         self._update_cursor(self.cursor_offset)
 
     def _render(self):
