@@ -898,6 +898,9 @@ class UjiView(object):
             Keymapping('e', 'editor', func=self.editor),
             Keymapping('f', 'show filenames', func=self.show_filenames),
             Keymapping('?', 'help', func=self.show_help, flags=[KeymappingFlags.ACTIVE_IN_HELP]),
+            Keymapping('S', 'skip test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.skip_test),
+            Keymapping('P', 'pass test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.pass_test),
+            Keymapping('F', 'fail test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.fail_test),
         )
         self.keymap: Dict[str, Keymapping] = {k.key: k for k in keymap}
 
@@ -1280,6 +1283,47 @@ class UjiView(object):
         self.mark()
         self.next()
 
+    def _prefix_with(self, prefix: str, allowed_prefixes=['PASS', 'SKIP', 'FAIL']):
+        '''
+        Prefix the current checkbox item with **SKIP** or similar so we get a box like
+            - [ ] **SKIP** the existing text
+        '''
+        assert prefix in allowed_prefixes  # sanity check only
+
+        line = self.lines[self.cursor_offset]
+        if not self.is_checkbox(line):
+            return
+
+        m = re.match(r'^(\s* - \[.\]\s*)(.*)', line)
+        if not m:
+            return
+
+        md_checkbox = m[1]
+        rest_of_line = m[2]
+
+        def pfmt(p):
+            return f'**{p}** '
+
+        for p in [pfmt(x) for x in allowed_prefixes]:
+            if rest_of_line.startswith(p):
+                rest_of_line = rest_of_line[len(p):]
+
+        line = f'{md_checkbox}{pfmt(prefix)}{rest_of_line}\n'
+        self.lines[self.cursor_offset] = line
+        self.writeout()
+        self._redraw()
+        # Explicitly passing/failing/skipping means this test is done - manually untoggle if need be
+        self.mark()
+        self.next()
+
+    def skip_test(self):
+        self._prefix_with("SKIP")
+
+    def pass_test(self):
+        self._prefix_with("PASS")
+
+    def fail_test(self):
+        self._prefix_with("FAIL")
 
     def editor(self):
         editor = os.environ.get('EDITOR')
