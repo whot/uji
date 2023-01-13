@@ -13,7 +13,7 @@ actor2:
 # generic test
 test1:
     type: test
-    test:
+    tests:
         - testcase0
     logs:
         files: [file1]
