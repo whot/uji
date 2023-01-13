@@ -1282,7 +1282,7 @@ class UjiView(object):
     def rerender(self):
         # Clear the screen, then re-render everything
         clearscreen = curtsies.FSArray(self.window.height, self.window.width)
-        for idx, l in enumerate(clearscreen):
+        for idx, _ in enumerate(clearscreen):
             clearscreen[idx] = [' ' * self.window.width]
         self.window.render_to_terminal(clearscreen)
         self._redraw()
