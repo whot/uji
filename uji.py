@@ -736,8 +736,19 @@ class UjiNew(object):
                 for key, values in test.filters.items():
                     if key not in actor.tags:
                         break
-                    if ('__any__' not in values and
-                            actor.tags[key] not in values):
+
+                    tag = actor.tags[key]
+
+                    excluded = [v[1:] for v in values if v[0] == '!']
+                    if tag in excluded:
+                        break
+
+                    required = [v for v in values if v[0] != '!']
+                    if not required and excluded:
+                        required = ['__any__']
+
+                    if ('__any__' not in required and
+                        actor.tags[key] not in required):
                         break
                 else:
                     dup = deepcopy(test)

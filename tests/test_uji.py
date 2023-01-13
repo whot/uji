@@ -91,6 +91,12 @@ def test_uji_tree(datadir):
         assert find_in_section(markdown, 'actor2', 'testcase5.2')
         assert find_in_section(markdown, 'actor2', 'file05')
 
+        assert find_in_section(markdown, 'actor1', 'testcase6'), markdown
+        assert not find_in_section(markdown, 'actor2', 'testcase6'), markdown
+
+        assert not find_in_section(markdown, 'actor1', 'testcase7'), markdown
+        assert find_in_section(markdown, 'actor2', 'testcase7'), markdown
+
         # Check for the 'emtpy' files to be created
         assert (Path('testdir') / 'generic' / 'test1' / 'file01-generic').exists()
         assert (Path('testdir') / 'generic' / 'test2' / 'file02-generic').exists()
