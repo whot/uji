@@ -14,15 +14,15 @@ actor2:
 test1:
     type: test
     tests:
-        - testcase0
+        - testcase1 (generic)
     logs:
-        files: [file1]
+        files: [file01-generic]
 
 # generic test
 test2:
     type: test
     logs:
-        files: [file2]
+        files: [file02-generic]
 
 # all actors but not generic
 test3:
@@ -30,22 +30,24 @@ test3:
     filter:
         actor: [__any__]
     tests:
-        - testcase1
+        - testcase3 (all actors)
 
 test4:
     type: test
     filter:
         actor: [one]
     tests:
-        - testcase2
+        - testcase4 (actor one only)
     logs:
-        files: [file3]
+        files: [file04-actor-one]
 
 test5:
     type: test
     filter:
         actor: [two]
     tests:
-        - testcase3
+        - testcase5 (actor two only)
+        - testcase5.1 (actor two only)
+        - testcase5.2 (actor two only)
     logs:
-        files: [file4]
+        files: [file05-actor-two]
