@@ -1080,7 +1080,7 @@ class UjiView(object):
 
     def _render(self):
         # easiest to just swap the last line with our status line
-        # than figuring out how to to this properl. curties doesn't
+        # than figuring out how to to this properly. curties doesn't
         # have a "draw on bottom line" method
         bottom_line_idx = self.view_offset + self.window.height - 1
         prev = self.line_buffer[bottom_line_idx]
