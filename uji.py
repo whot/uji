@@ -1279,12 +1279,14 @@ class UjiView(object):
         self.window.render_to_terminal(self.line_buffer[self.view_offset:])
         self.line_buffer[bottom_line_idx] = prev
 
-    def rerender(self):
-        # Clear the screen, then re-render everything
+    def _clear_screen(self):
         clearscreen = curtsies.FSArray(self.window.height, self.window.width)
         for idx, _ in enumerate(clearscreen):
             clearscreen[idx] = [' ' * self.window.width]
         self.window.render_to_terminal(clearscreen)
+
+    def rerender(self):
+        self._clear_screen()
         self._redraw()
 
     @property
