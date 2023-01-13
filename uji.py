@@ -23,11 +23,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import List
+from typing import Dict, List
 
 import click
 import collections
 import curtsies
+import enum
 import git
 import io
 import logging
@@ -824,6 +825,28 @@ class UjiNew(object):
             precheck.chmod(precheck.stat().st_mode | stat.S_IXUSR)
 
 
+class KeymappingFlags(enum.Enum):
+    ONLY_ON_CHECKBOX = enum.auto()
+    ACTIVE_IN_HELP = enum.auto()
+    UPLOAD = enum.auto()
+    EXECUTE = enum.auto()
+
+
+class Keymapping(object):
+    def __init__(self, key, help, func, flags=None):
+        self.key = key
+        self.help = help
+        self.func = func
+        self.flags = flags or []
+
+    @property
+    def short_help(self):
+        if self.help[0] == self.key:
+            return f'({self.help[0]}){self.help[1:]}'
+        else:
+            return f'({self.key}) {self.help}'
+
+
 class UjiView(object):
     CURSOR = '⇒ '
 
@@ -857,6 +880,26 @@ class UjiView(object):
         self.cursor_offset = 0
         self.error = None
         self.show_filename_enabled = True
+        self.display_help = False
+
+        keymap = (
+            Keymapping('<ESC>', 'quit/exit help', flags=[KeymappingFlags.ACTIVE_IN_HELP], func=self.exit),
+            Keymapping('q', 'quit/exit help', flags=[KeymappingFlags.ACTIVE_IN_HELP], func=self.exit),
+            Keymapping('j', 'down', func=self.cursor_down),
+            Keymapping('k', 'up', func=self.cursor_up),
+            Keymapping('<DOWN>', 'down', func=self.cursor_down),
+            Keymapping('<UP>', 'down', func=self.cursor_up),
+            Keymapping('<SPACE>', 'page down', func=self.page_down),
+            Keymapping('n', 'next', func=self.next),
+            Keymapping('p', 'previous', func=self.previous),
+            Keymapping('r', 'run command', flags=[KeymappingFlags.ONLY_ON_CHECKBOX, KeymappingFlags.EXECUTE], func=self.execute_command),
+            Keymapping('t', 'toggle', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.toggle),
+            Keymapping('u', 'upload', flags=[KeymappingFlags.ONLY_ON_CHECKBOX, KeymappingFlags.UPLOAD], func=self.upload),
+            Keymapping('e', 'editor', func=self.editor),
+            Keymapping('f', 'show filenames', func=self.show_filenames),
+            Keymapping('?', 'help', func=self.show_help, flags=[KeymappingFlags.ACTIVE_IN_HELP]),
+        )
+        self.keymap: Dict[str, Keymapping] = {k.key: k for k in keymap}
 
         # curtsies doesn't handle bg/fg properly, so we hack it up this way
         def handler(signal, frame):
@@ -965,29 +1008,12 @@ class UjiView(object):
             self._update_cursor(self.view_offset + self.window.height)
 
     def _handle_input(self, window, c):
-        mapping = {
-            '<ESC>': self.quit,
-            'q': self.quit,
-            'j': self.cursor_down,
-            'k': self.cursor_up,
-            '<DOWN>': self.cursor_down,
-            '<UP>': self.cursor_up,
-            '<SPACE>': self.page_down,
-            'n': self.next,
-            'p': self.previous,
-            'r': self.execute_command,
-            't': self.toggle,
-            'u': self.upload,
-            'e': self.editor,
-            'f': self.show_filenames,
-        }
-
         try:
-            func = mapping[c]
+            mapping = self.keymap[c]
+            if not self.display_help or KeymappingFlags.ACTIVE_IN_HELP in mapping.flags:
+                mapping.func()
         except KeyError:
             pass
-        else:
-            func()
 
         return False
 
@@ -1010,6 +1036,13 @@ class UjiView(object):
             target.insert(offset, l + eol)
             offset += 1
         return offset
+
+    def exit(self):
+        if self.display_help:
+            self.display_help = False
+            self.rerender()
+        else:
+            self.quit()
 
     def quit(self):
         self.stop = True
@@ -1258,10 +1291,23 @@ class UjiView(object):
         self.show_filename_enabled = not self.show_filename_enabled
         self.rerender()
 
+    def show_help(self):
+        self.display_help = not self.display_help
+        self.rerender()
+
     def writeout(self):
         with open(self.mdfile, 'w') as fd:
             fd.write(''.join(self.lines))
         self.repo.index.add([os.fspath(self.mdfile)])
+
+    def _draw_help_screen(self) -> List[str]:
+        rendered = ['+' + '-' * 32 + '+']
+        for _, v in self.keymap.items():
+            str = f'{v.key}: {v.help}'
+            rendered.append(f'| {str:30s} |')
+        rendered.append('+' + '-' * 32 + '+')
+
+        return rendered
 
     def _redraw(self):
         rendered = self._render_markdown(self.lines)
@@ -1269,7 +1315,12 @@ class UjiView(object):
         self.line_buffer = self._init_buffer(self.window, content=rendered, cursor=self.CURSOR)
         self._update_cursor(self.cursor_offset)
 
+    def _redraw_help_screen(self):
+        rendered = self._draw_help_screen()
+        self.line_buffer = self._init_buffer(self.window, content=rendered, cursor='')
+
     def _render(self):
+
         # easiest to just swap the last line with our status line
         # than figuring out how to to this properly. curties doesn't
         # have a "draw on bottom line" method
@@ -1287,39 +1338,27 @@ class UjiView(object):
 
     def rerender(self):
         self._clear_screen()
-        self._redraw()
+        if self.display_help:
+            self._redraw_help_screen()
+        else:
+            self._redraw()
 
     @property
     def statusline(self):
         if self.error:
             return Colors.format(f'$RED{self.error}')
 
-        commands = {
-            'j': 'up',
-            'k': 'down',
-            'n': 'next',
-            'p': 'previous',
-            'e': 'edit',
-            'q': 'quit',
-            'r': 'run command',
-            't': 'toggle',
-            'u': 'upload',
-            'f': 'show filenames',
-        }
+        commands = [self.keymap[k] for k in ['j', 'k', 'n', 'p', 'e', 'q', 'r', 't', 'u', 'f']]
 
         statusline = ['$BOLD ---']
-        for k, v in commands.items():
-            if v[0] == k:
-                s = f'({k}){v[1:]}'
-            else:
-                s = f'({k}) {v}'
-
+        for k in commands:
+            s = k.short_help
             # gray out toggle/upload for non-checkboxes
-            if k in ('t', 'u', 'r'):
+            if KeymappingFlags.ONLY_ON_CHECKBOX in k.flags:
                 line = self.lines[self.cursor_offset]
                 if (not self.is_checkbox(line) or
-                        (k == 'u' and '📎' not in line) or
-                        (k == 'r' and '⚙' not in line)):
+                        (KeymappingFlags.UPLOAD in k.flags and '📎' not in line) or
+                        (KeymappingFlags.EXECUTE in k.flags and '⚙' not in line)):
                     s = f'$LIGHT_GRAY{s}'
             statusline.append(f'$BOLD{s}$RESET')
 
