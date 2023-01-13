@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from typing import Optional
+
 from click.testing import CliRunner
 import pytest
 import os
@@ -14,6 +16,22 @@ from pathlib import Path
 def datadir():
     import os
     return Path(os.path.realpath(__file__)).parent / 'data'
+
+
+def find_in_section(markdown: str, section: str, string: str) -> Optional[str]:
+    prev_line = None
+    in_section = False
+    for line in markdown.split('\n'):
+        if prev_line is not None and prev_line == section and line == '-' * len(section):
+            in_section = True
+        elif in_section and line == '':
+            in_section = False
+        elif in_section:
+            if string in line:
+                return line
+        prev_line = line
+
+    return None
 
 
 def test_uji_example(datadir):
@@ -49,12 +67,33 @@ def test_uji_tree(datadir):
         assert 'actor2\n------\n' in markdown
         assert 'Generic\n-------\n' in markdown
 
-        # FIXME: check for the tests to be distributed across the actors
+        # check for the tests to be distributed across the actors
         # correctly
+        assert find_in_section(markdown, 'Generic', 'testcase1')
+        assert find_in_section(markdown, 'Generic', 'file01')
+        assert find_in_section(markdown, 'Generic', 'file02')
+
+        assert find_in_section(markdown, 'actor1', 'testcase3')
+        assert find_in_section(markdown, 'actor2', 'testcase3')
+
+        assert find_in_section(markdown, 'actor1', 'testcase4')
+        assert find_in_section(markdown, 'actor1', 'file04')
+        assert not find_in_section(markdown, 'actor2', 'testcase4')
+        assert not find_in_section(markdown, 'actor2', 'file04')
+
+        assert not find_in_section(markdown, 'actor1', 'testcase5')
+        assert not find_in_section(markdown, 'actor1', 'testcase5.1')
+        assert not find_in_section(markdown, 'actor1', 'testcase5.2')
+        assert not find_in_section(markdown, 'actor1', 'file05')
+
+        assert find_in_section(markdown, 'actor2', 'testcase5')
+        assert find_in_section(markdown, 'actor2', 'testcase5.1')
+        assert find_in_section(markdown, 'actor2', 'testcase5.2')
+        assert find_in_section(markdown, 'actor2', 'file05')
 
         # Check for the 'emtpy' files to be created
-        assert (Path('testdir') / 'generic' / 'test1' / 'file1').exists()
-        assert (Path('testdir') / 'generic' / 'test2' / 'file2').exists()
-        assert (Path('testdir') / 'actor1' / 'test4' / 'file3').exists()
-        assert (Path('testdir') / 'actor2' / 'test5' / 'file4').exists()
+        assert (Path('testdir') / 'generic' / 'test1' / 'file01-generic').exists()
+        assert (Path('testdir') / 'generic' / 'test2' / 'file02-generic').exists()
+        assert (Path('testdir') / 'actor1' / 'test4' / 'file04-actor-one').exists()
+        assert (Path('testdir') / 'actor2' / 'test5' / 'file05-actor-two').exists()
 
