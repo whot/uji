@@ -36,7 +36,7 @@
 #    description: a longer description for human consumption
 #    tags: a dictionary of key: value that can be used to filter on
 #          value must not be a list/dict
-#  
+#
 # The test type is a description of a test that may produce log files.
 # Allowed subkeys:
 #    extends: inherit all from the referenced section
@@ -80,7 +80,7 @@ file:
 #
 # Since we support 'include:' statements, you could have files with all the
 # hw you have defined in mice.yaml, keyboards.yaml, etc.
-  
+
 t450_keyboard:
   type: actor
   name: Lenovo T450s - AT Translated Keyboard
