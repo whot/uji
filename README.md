@@ -86,13 +86,13 @@ pip install --user uji
 Usage
 =====
 
-Look at the [example.yaml](example.yaml) file for an example test
+Look at the [example.yaml](examples/example.yaml) file for an example test
 configuration.
 
 ```
 $ mkdir my-test-results && cd my-test-results
 $ git init
-$ wget -o mypackage.yaml https://raw.githubusercontent.com/whot/uji/master/examples/example.yaml
+$ wget -o mypackage.yaml https://raw.githubusercontent.com/whot/uji/main/examples/example.yaml
 ```
 
 Now you're set up. Edit the `mypackage.yaml` file and add your tests.
