@@ -1341,7 +1341,7 @@ def uji_setup(directory):
     yamlfile = directory / f'{directory.name}.yaml'
 
     try:
-        URL = 'https://raw.githubusercontent.com/whot/uji/master/examples/example.yaml'
+        URL = 'https://raw.githubusercontent.com/whot/uji/main/examples/example.yaml'
         with urllib.request.urlopen(URL, timeout=5) as response:
             content = response.read().decode()
     except Exception as e:
