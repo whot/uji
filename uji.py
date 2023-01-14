@@ -34,6 +34,10 @@ import io
 import logging
 import os
 import re
+import rich
+import rich.console
+import rich.logging
+import rich.theme
 import signal
 import stat
 import subprocess
@@ -44,82 +48,27 @@ from copy import deepcopy
 from pathlib import Path
 from textwrap import dedent
 
+# Stylesheet for uji view
+style = '''
+[styles]
+header = bold on cyan
+filename = underline blue
+inline = red
+checkbox = green
+code = on yellow
+statusline = bold
+statusline_inactive = gray50
+statusline_active = black
 
-class Colors:
-    BLACK = '\033[30m'
-    RED = '\033[31m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    BLUE = '\033[34m'
-    MAGENTA = '\033[35m'
-    CYAN = '\033[36m'
-    LIGHT_GRAY = '\033[37m'
-    DARK_GRAY = '\033[90m'
-    LIGHT_RED = '\033[91m'
-    LIGHT_GREEN = '\033[92m'
-    LIGHT_YELLOW = '\033[93m'
-    LIGHT_BLUE = '\033[94m'
-    LIGHT_MAGENTA = '\033[95m'
-    LIGHT_CYAN = '\033[96m'
-    WHITE = '\033[97m'
-    RESET = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    BG_BLACK = '\u001b[40m'
-    BG_RED = '\u001b[41m'
-    BG_GREEN = '\u001b[42m'
-    BG_YELLOW = '\u001b[43m'
-    BG_BLUE = '\u001b[44m'
-    BG_MAGENTA = '\u001b[45m'
-    BG_CYAN = '\u001b[46m'
-    BG_WHITE = '\u001b[47m'
-    BG_BRIGHT_BLACK = '\u001b[40;1m'
-    BG_BRIGHT_RED = '\u001b[41;1m'
-    BG_BRIGHT_GREEN = '\u001b[42;1m'
-    BG_BRIGHT_YELLOW = '\u001b[43;1m'
-    BG_BRIGHT_BLUE = '\u001b[44;1m'
-    BG_BRIGHT_MAGENTA = '\u001b[45;1m'
-    BG_BRIGHT_CYAN = '\u001b[46;1m'
-    BG_BRIGHT_WHITE = '\u001b[47;1m'
+info = dim cyan
+warning = magenta
+danger = bold red
+error = red
+'''
 
-    @classmethod
-    def format(cls, message):
-        '''
-        Format the given message with the colors, always ending with a
-        reset escape sequence.
-
-        .. param: message
-
-        The to-be-colorized message. Use the colors prefixed with a dollar
-        sign, e.g. ``Colors.format(f'$RED{somevar}$RESET')``
-
-        '''
-        for k, v in cls.__dict__.items():
-            if not isinstance(v, str) or v[1] != '[':
-                continue
-            message = message.replace('$' + k, v)
-        return message + cls.RESET
-
-
-class ColorFormatter(logging.Formatter):
-    def format(self, record):
-        COLORS = {
-            'DEBUG': Colors.LIGHT_GRAY,
-            'INFO': Colors.LIGHT_GREEN,
-            'WARNING': Colors.YELLOW,
-            'ERROR': Colors.LIGHT_RED,
-            'CRITICAL': Colors.RED,
-        }
-        message = logging.Formatter.format(self, record)
-        message = message.replace(f'$COLOR', COLORS[record.levelname])
-        return Colors.format(message)
-
-
-log_format = '$COLOR%(levelname)s: %(message)s'
-logger_handler = logging.StreamHandler()
-logger_handler.setFormatter(ColorFormatter(log_format))
+theme = rich.theme.Theme.from_file(io.StringIO(style))
 logger = logging.getLogger('uji')
-logger.addHandler(logger_handler)
+logger.addHandler(rich.logging.RichHandler())
 logger.setLevel(logging.ERROR)
 
 
@@ -869,6 +818,8 @@ class UjiView(object):
         self.directory = directory
         self.mdfile = md
 
+        self.console = rich.console.Console(theme=theme)
+
         # we keep the lines from the source file separate from the rendered
         # ones, the rendered ones are throwaways
         self.lines = open(md).readlines()
@@ -927,34 +878,37 @@ class UjiView(object):
             l = l[:-1]  # drop trailing \n
             if l.lstrip().startswith('```'):
                 in_code_section = not in_code_section
-                l = f'$BG_BRIGHT_YELLOW {" " * 80}$RESET'
+                if in_code_section:
+                    l = f'[code] {" " * 80}'
+                else:
+                    l = f'{" " * 80}[/code]'
             elif in_code_section:
                 filler = ' ' * (80 - len(l))
-                l = f'$BG_BRIGHT_YELLOW {l}{filler}$RESET'
+                l = f' {l}{filler}'
             else:
                 # bold
-                l = re.sub(r'\*\*([^*]*)\*\*', rf'$BOLD\1$RESET', l)
+                l = re.sub(r'\*\*([^*]*)\*\*', rf'[bold]\1[/bold]', l)
                 # italic
-                l = re.sub(r'([^*])\*([^*]*)\*([^*])', rf'\1$UNDERLINE\2$RESET\3', l)
+                l = re.sub(r'([^*])\*([^*]*)\*([^*])', rf'\1[underline]\2\3[/underline]', l)
                 # links
                 expr = r'\[([^\[(]*)\]\((.*)\)'
                 if self.show_filename_enabled:
-                    l = re.sub(expr, rf'$UNDERLINE$BLUE\1$RESET', l)
+                    l = re.sub(expr, rf'[filename]\1[/filename]', l)
                 else:
-                    l = re.sub(expr, rf'$UNDERLINE$BLUE\2$RESET', l)
+                    l = re.sub(expr, rf'[filename]\2[/filename]', l)
                 # inline code
-                l = re.sub(r'`([^`]*)`', rf'$RED\1$RESET', l)
+                l = re.sub(r'`([^`]*)`', rf'[inline]\1[/inline]', l)
 
                 # ###-style headers
                 # we're stripping the ## here and thus need to adjust the
                 # filler width
                 l = re.sub(r'^(#{1,}\s?)(.*)',
-                           lambda m: f'$BOLD$BG_BRIGHT_CYAN{m.group(2)}{" " * (80 - len(m.group(1)) - len(m.group(2)))}$RESET', l)
+                           lambda m: f'[header]{m.group(2)}{" " * (80 - len(m.group(1)) - len(m.group(2)))}[/header]', l)
 
-                # checkboxes [ ], [x] or [X]
-                l = re.sub(r'^\s*(- \[[ xX]\] )(.*)', rf'$GREEN\1\2', l)
+                # checkboxes [ ], [x] or [X], must be escaped with one backslah (e.g. \[x]) to prevent rich from parsing it as markup
+                l = re.sub(r'^(\s*- )(\[[ xX]\] )(.*)', r'[checkbox]\1\\\2\3[/checkbox]', l)
 
-            rendered.append(Colors.format(l))
+            rendered.append(l)
 
         # poor man's header section detection
         # we check against the original lines - in case we have markdown in
@@ -965,8 +919,12 @@ class UjiView(object):
                 r1 = rendered[idx]
                 r2 = rendered[idx + 1]
                 filler = ' ' * (80 - len(r1))
-                rendered[idx] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{r1}$BOLD$BG_BRIGHT_CYAN{filler}')
-                rendered[idx + 1] = Colors.format(f'$BOLD$BG_BRIGHT_CYAN{r2}$BOLD$BG_BRIGHT_CYAN{filler}')
+                rendered[idx] = f'[header]{r1}{filler}[/header]'
+                rendered[idx + 1] = f'[header]{r2}{filler}[/header]'
+
+        with self.console.capture() as capture:
+            self.console.print("\n".join(rendered))
+        rendered = capture.get().split('\n')
 
         return rendered
 
@@ -1377,9 +1335,14 @@ class UjiView(object):
         # easiest to just swap the last line with our status line
         # than figuring out how to to this properly. curties doesn't
         # have a "draw on bottom line" method
+
+        console = rich.console.Console(theme=theme)
+        with console.capture() as capture:
+            console.print(self.statusline)
+
         bottom_line_idx = self.view_offset + self.window.height - 1
         prev = self.line_buffer[bottom_line_idx]
-        self.line_buffer[bottom_line_idx] = self.statusline
+        self.line_buffer[bottom_line_idx] = capture.get().rstrip()  # trim off trailing \n
         self.window.render_to_terminal(self.line_buffer[self.view_offset:])
         self.line_buffer[bottom_line_idx] = prev
 
@@ -1399,24 +1362,25 @@ class UjiView(object):
     @property
     def statusline(self):
         if self.error:
-            return Colors.format(f'$RED{self.error}')
+            return f'[error]{self.error}[/error]'
 
         commands = [self.keymap[k] for k in ['j', 'k', 'n', 'p', 'e', 'q', 'r', 't', 'u', 'f']]
 
-        statusline = ['$BOLD ---']
+        statusline = ['[statusline] ---']
         for k in commands:
             s = k.short_help
+
             # gray out toggle/upload for non-checkboxes
             if KeymappingFlags.ONLY_ON_CHECKBOX in k.flags:
                 line = self.current_line
                 if (not self.is_checkbox(line) or
                         (KeymappingFlags.UPLOAD in k.flags and '📎' not in line) or
                         (KeymappingFlags.EXECUTE in k.flags and '⚙' not in line)):
-                    s = f'$LIGHT_GRAY{s}'
-            statusline.append(f'$BOLD{s}$RESET')
+                    s = f'[statusline_inactive]{s}[/statusline_inactive]'
+            statusline.append(f'[statusline_active]{s}[/statusline_active]')
 
-        statusline.append('$BOLD ---')
-        return Colors.format(' '.join(statusline))
+        statusline.append(' ---[/statusline]')
+        return ' '.join(statusline)
 
     def run(self):
         while self.restart:
