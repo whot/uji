@@ -18,13 +18,13 @@ place.
   └── .git
   $ cd myproject
   $ git log
-  commit 82636a681bb02d51e281a49194c99be7d3e6ab10 (HEAD -> master)
+  commit 82636a681bb02d51e281a49194c99be7d3e6ab10 (HEAD -> main)
   Author: Author Name <your.name@email.com>
   Date:   Fri Dec 13 15:41:52 2019 +1000
 
         Initial setup for myproject
 
-  
+
 Once complete, look at the ``myproject.yaml`` file in that directory and
 modify it. By default, it is based off the ``examples.yaml`` in the **uji**
 upstream git directory.
