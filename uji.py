@@ -25,9 +25,9 @@
 
 from typing import Dict, List
 
+import blessed
 import click
 import collections
-import curtsies
 import enum
 import git
 import io
@@ -794,6 +794,11 @@ class Keymapping(object):
             return f'({self.key}) {self.help}'
 
 
+class Dimension():
+    def __init__(self, w, h):
+        self.width, self.height = w, h
+
+
 class UjiView(object):
     CURSOR = '⇒ '
 
@@ -832,13 +837,13 @@ class UjiView(object):
         self.display_help = False
 
         keymap = (
-            Keymapping('<ESC>', 'quit/exit help', flags=[KeymappingFlags.ACTIVE_IN_HELP], func=self.exit),
+            Keymapping('KEY_ESCAPE', 'quit/exit help', flags=[KeymappingFlags.ACTIVE_IN_HELP], func=self.exit),
             Keymapping('q', 'quit/exit help', flags=[KeymappingFlags.ACTIVE_IN_HELP], func=self.exit),
             Keymapping('j', 'down', func=self.cursor_down),
             Keymapping('k', 'up', func=self.cursor_up),
-            Keymapping('<DOWN>', 'down', func=self.cursor_down),
-            Keymapping('<UP>', 'down', func=self.cursor_up),
-            Keymapping('<SPACE>', 'page down', func=self.page_down),
+            Keymapping('KEY_DOWN', 'down', func=self.cursor_down),
+            Keymapping('KEY_UP', 'down', func=self.cursor_up),
+            Keymapping(' ', 'page down', func=self.page_down),
             Keymapping('n', 'next', func=self.next),
             Keymapping('p', 'previous', func=self.previous),
             Keymapping('r', 'run command', flags=[KeymappingFlags.ONLY_ON_CHECKBOX, KeymappingFlags.EXECUTE], func=self.execute_command),
@@ -869,7 +874,7 @@ class UjiView(object):
     def current_line(self, value: str) -> None:
         self.lines[self.cursor_offset] = value
 
-    def _render_markdown(self, lines):
+    def _render_markdown(self, lines) -> List[str]:
         in_code_section = False
 
         rendered = []
@@ -928,18 +933,6 @@ class UjiView(object):
 
         return rendered
 
-    def _init_buffer(self, window: curtsies.FullscreenWindow, content: List[str], cursor: str) -> curtsies.FSArray:
-        # extra height so we can scroll off the bottom
-        # fixed width because we don't handle resizes
-        line_buffer = curtsies.FSArray(len(content) + window.height, 256)
-
-        curlen = len(cursor)
-        for idx, l in enumerate(content):
-            msg = curtsies.fmtstr(l)
-            line_buffer[idx, curlen:msg.width + curlen] = [msg]
-
-        return line_buffer
-
     def _update_cursor(self, new_position):
         if new_position < 0:
             new_position = 0
@@ -949,12 +942,9 @@ class UjiView(object):
         if new_position == self.cursor_offset:
             return
 
-        curlen = len(self.CURSOR)
-        self.line_buffer[self.cursor_offset, 0:curlen] = [' ' * curlen]
         self.cursor_offset = new_position
-        self.line_buffer[self.cursor_offset, 0:curlen] = [self.CURSOR]
 
-        if self.cursor_offset > self.view_offset + self.window.height:
+        if self.cursor_offset >= self.view_offset + self.window.height - 1:
             self._update_view(self.view_offset + self.window.height // 2)
         elif self.cursor_offset < self.view_offset:
             self._update_view(self.view_offset - self.window.height // 2)
@@ -973,16 +963,19 @@ class UjiView(object):
             self._update_cursor(self.view_offset)
         elif self.cursor_offset > self.view_offset + self.window.height:
             self._update_cursor(self.view_offset + self.window.height)
+        self.rerender()
 
     def _handle_input(self, c):
         try:
             mapping = self.keymap[c]
-            if not self.display_help or KeymappingFlags.ACTIVE_IN_HELP in mapping.flags:
-                mapping.func()
         except KeyError:
-            pass
+            try:
+                mapping = self.keymap[c.name]
+            except KeyError:
+                return
 
-        return False
+        if not self.display_help or KeymappingFlags.ACTIVE_IN_HELP in mapping.flags:
+            mapping.func()
 
     def _line_split_by_width(self, line, max_len):
         return [(line[i:i + max_len]) for i in range(0, len(line), max_len)]
@@ -1321,36 +1314,40 @@ class UjiView(object):
         return rendered
 
     def _redraw(self):
-        rendered = self._render_markdown(self.lines)
-
-        self.line_buffer = self._init_buffer(self.window, content=rendered, cursor=self.CURSOR)
         self._update_cursor(self.cursor_offset)
+
+        # Note: this assumes that our rendering process never inserts or removes lines
+        # Also - if the line is wider than the terminal, interesting things happen.
+        # But we can't easily clip because all the ansi escape codes make our strings longer
+        # than they are.
+        rendered = self._render_markdown(self.lines)
+        self.line_buffer = rendered[self.view_offset:self.view_offset + self.window.height]
 
     def _redraw_help_screen(self):
         rendered = self._draw_help_screen()
-        self.line_buffer = self._init_buffer(self.window, content=rendered, cursor='')
+        self.line_buffer = rendered
 
     def _render(self):
+        cursor_prefix = ' ' * len(self.CURSOR)
+        print(self.term.home, end='')
+        for idx, line in enumerate(self.line_buffer[:-1]):
+            print(cursor_prefix + line)
 
-        # easiest to just swap the last line with our status line
-        # than figuring out how to to this properly. curties doesn't
-        # have a "draw on bottom line" method
+        # now draw in the cursor
+        print(self.term.move_xy(0, self.cursor_offset - self.view_offset) + self.CURSOR, end='')
 
+        # and the statusline
         console = rich.console.Console(theme=theme)
         with console.capture() as capture:
             console.print(self.statusline)
 
-        bottom_line_idx = self.view_offset + self.window.height - 1
-        prev = self.line_buffer[bottom_line_idx]
-        self.line_buffer[bottom_line_idx] = capture.get().rstrip()  # trim off trailing \n
-        self.window.render_to_terminal(self.line_buffer[self.view_offset:])
-        self.line_buffer[bottom_line_idx] = prev
+        statusline = capture.get().rstrip()
+        statusline_idx = self.window.height - 1
+
+        print(self.term.move_xy(0, statusline_idx) + statusline, end='', flush=True)
 
     def _clear_screen(self):
-        clearscreen = curtsies.FSArray(self.window.height, self.window.width)
-        for idx, _ in enumerate(clearscreen):
-            clearscreen[idx] = [' ' * self.window.width]
-        self.window.render_to_terminal(clearscreen)
+        print(self.term.move_xy(0, 0)+ self.term.clear, end='', flush=True)
 
     def rerender(self):
         self._clear_screen()
@@ -1386,17 +1383,16 @@ class UjiView(object):
         while self.restart:
             self.stop = False
             self.restart = False
-            with curtsies.FullscreenWindow() as window:
-                self.window = window
+            term = blessed.Terminal()
+            self.term = term
+            with term.fullscreen(), term.cbreak(), term.hidden_cursor():
+                self.window = Dimension(term.width, term.height)
                 self._redraw()
-                with curtsies.Input() as input_generator:
-                    self._render()
-                    for c in input_generator:
-                        self._handle_input(window, c)
-                        if self.stop:
-                            break
+                self._render()
 
-                        self._render()
+                while not self.stop:
+                    self._handle_input(term.inkey())
+                    self._render()
 
 
 def uji_setup(directory):
