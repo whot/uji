@@ -1398,7 +1398,7 @@ def uji_setup(directory):
           To start a new test set:
               cd {directory}
               uji new {yamlfile.name}
-              uji view {yamlfile.name}-<date>
+              uji view {yamlfile.stem}-<date>
           '''))
 
 
