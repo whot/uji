@@ -974,7 +974,7 @@ class UjiView(object):
         elif self.cursor_offset > self.view_offset + self.window.height:
             self._update_cursor(self.view_offset + self.window.height)
 
-    def _handle_input(self, window, c):
+    def _handle_input(self, c):
         try:
             mapping = self.keymap[c]
             if not self.display_help or KeymappingFlags.ACTIVE_IN_HELP in mapping.flags:
