@@ -1361,7 +1361,7 @@ class UjiView(object):
         if self.error:
             return f'[error]{self.error}[/error]'
 
-        commands = [self.keymap[k] for k in ['j', 'k', 'n', 'p', 'e', 'q', 'r', 't', 'u', 'f']]
+        commands = [self.keymap[k] for k in ['e', 'r', 't', 'u', 'f']]
 
         statusline = ['[statusline] ---']
         for k in commands:
