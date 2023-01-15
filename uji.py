@@ -409,7 +409,7 @@ class MarkdownFormatter(object):
                 if description:
                     self.parent.fprint(f'  - {description}')
             elif output_type == 'human':
-                self.checkbox_command(f'`{command}`: <strong>ADD COMMENTS HERE</strong>')
+                self.checkbox_command(f'`{command}`: **ADD COMMENTS HERE**')
                 if description:
                     self.parent.fprint(f'  - {description}')
 
@@ -1131,7 +1131,7 @@ class UjiView(object):
         # list of regex to deduce the type of command to be run
         command_re = {
                 'attach': r'^(\s*)- \[.\].* \[`(.*)`\]\((.*)\).*',
-                'human': r'^(\s*)- \[.\].* `(.*)`: <strong>(.*)</strong>$',
+                'human': r'^(\s*)- \[.\].* `(.*)`: \*\*(.*)\*\*$',
                 'single': r'^(\s*)- \[.\].* `(.*)`: `(.*)`$',
                 'multi': r'^(\s*)- \[.\].* `(.*)`:$',
                 'exitcode': r'^(\s*)- \[.\].* `(.*)`$',
