@@ -925,7 +925,7 @@ class UjiView(object):
 
         for l in lines:
             l = l[:-1]  # drop trailing \n
-            if l.startswith('```'):
+            if l.lstrip().startswith('```'):
                 in_code_section = not in_code_section
                 l = f'$BG_BRIGHT_YELLOW {" " * 80}$RESET'
             elif in_code_section:
