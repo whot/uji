@@ -403,7 +403,6 @@ class MarkdownFormatter(object):
                     self.parent.fprint(f'  - {description}')
                 self.parent.fprint(f'```')
                 self.parent.fprint(f'   COMMAND OUTPUT')
-                self.parent.fprint(f'')
                 self.parent.fprint(f'```')
             elif output_type == 'attach':
                 self.checkbox_command(f'[`{command}`]({filename})')
