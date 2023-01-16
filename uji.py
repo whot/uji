@@ -863,6 +863,8 @@ class UjiView(object):
             Keymapping('F', 'fail test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.fail_test),
             Keymapping('V', 'view file', flags=[KeymappingFlags.ONLY_ON_FILE], func=self.view_file),
             Keymapping('E', 'edit file', flags=[KeymappingFlags.ONLY_ON_FILE], func=self.edit_file),
+            Keymapping('KEY_LEFT', 'indent right by 2', func=self.indent_left),
+            Keymapping('KEY_RIGHT', 'indent left by 2', func=self.indent_right),
         )
         self.keymap: Dict[str, Keymapping] = {k.key: k for k in keymap}
 
@@ -1343,6 +1345,15 @@ class UjiView(object):
         subprocess.call([editor, self.mdfile, f'+{self.cursor_offset + 1}'])
         self.lines = open(self.mdfile).readlines()
         self.dirty = True
+
+    def indent_right(self):
+        self.current_line = f"  {self.current_line}"
+        self.dirty = True
+
+    def indent_left(self):
+        if self.current_line.startswith("  "):
+            self.current_line = self.current_line[2:]
+            self.dirty = True
 
     def show_filenames(self):
         self.show_filename_enabled = not self.show_filename_enabled
