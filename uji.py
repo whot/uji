@@ -51,13 +51,14 @@ from textwrap import dedent
 # Stylesheet for uji view
 style = '''
 [styles]
-header = bold on cyan
-filename = underline blue
-inline = red
-checkbox = green
-code = on yellow
+header = #9a56a9 on #dddddd
+filename = #568ea9 underline
+inline = #a97156
+checkbox = #65a956
+checkbox_done = black
+code = on #eeeeee
 statusline = bold
-statusline_inactive = gray50
+statusline_inactive = #dddddd
 statusline_active = black
 
 info = dim cyan
