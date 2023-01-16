@@ -851,6 +851,8 @@ class UjiView(object):
             Keymapping('KEY_PGUP', 'page down', func=self.page_up),
             Keymapping('n', 'next', func=self.next),
             Keymapping('p', 'previous', func=self.previous),
+            Keymapping('N', 'next section', func=self.next_section),
+            Keymapping('U', 'previous section', func=self.prev_section),
             Keymapping('r', 'run command', flags=[KeymappingFlags.ONLY_ON_CHECKBOX, KeymappingFlags.EXECUTE], func=self.execute_command),
             Keymapping('t', 'toggle', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.toggle),
             Keymapping('u', 'upload', flags=[KeymappingFlags.ONLY_ON_CHECKBOX, KeymappingFlags.UPLOAD], func=self.upload),
@@ -1040,6 +1042,24 @@ class UjiView(object):
             if self.is_checkbox(l):
                 self._update_cursor(idx)
                 break
+
+    def next_section(self):
+        for idx, (current, next) in enumerate(zip(self.lines[self.cursor_offset + 1:-1],
+                                                  self.lines[self.cursor_offset + 2:])):
+            if self.is_header(current, next):
+                self.cursor_offset = self.cursor_offset + 1 + idx
+                break
+
+    def prev_section(self):
+        for idx, (current, next) in enumerate(zip(reversed(self.lines[0:self.cursor_offset - 1]),
+                                                   reversed(self.lines[1:self.cursor_offset]))):
+            if self.is_header(current, next):
+                self.cursor_offset = self.cursor_offset - idx - 2
+                break
+
+    def is_header(self, current, next):
+        return (re.match(r'^(#{1,}\s?)(.*)', current) or
+                re.match(r'^[=\-._]{3,}$', next) and len(current) == len(next))
 
     def is_checkbox(self, line):
         return re.match(r'^\s*- \[[ xX]\].*', line) is not None
