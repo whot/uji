@@ -1152,11 +1152,11 @@ class UjiView(object):
                 command_match = match
                 break
 
-        if command_type is None:
+        if command_type is None or command_match is None:
             logger.error(f'Failed to match run command line: {line}')
             return
 
-        command = match[2]
+        command = command_match[2]
         output = []
         insert_offset = self.cursor_offset + 1
         offset = -1
