@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import blessed
 import click
@@ -774,6 +774,7 @@ class UjiNew(object):
 
 class KeymappingFlags(enum.Enum):
     ONLY_ON_CHECKBOX = enum.auto()
+    ONLY_ON_FILE = enum.auto()
     ACTIVE_IN_HELP = enum.auto()
     UPLOAD = enum.auto()
     EXECUTE = enum.auto()
@@ -855,6 +856,8 @@ class UjiView(object):
             Keymapping('S', 'skip test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.skip_test),
             Keymapping('P', 'pass test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.pass_test),
             Keymapping('F', 'fail test', flags=[KeymappingFlags.ONLY_ON_CHECKBOX], func=self.fail_test),
+            Keymapping('V', 'view file', flags=[KeymappingFlags.ONLY_ON_FILE], func=self.view_file),
+            Keymapping('E', 'edit file', flags=[KeymappingFlags.ONLY_ON_FILE], func=self.edit_file),
         )
         self.keymap: Dict[str, Keymapping] = {k.key: k for k in keymap}
 
@@ -1032,6 +1035,14 @@ class UjiView(object):
 
     def is_checkbox(self, line):
         return re.match(r'^\s*- \[[ xX]\].*', line) is not None
+
+    def _get_file(self, line) -> Optional[str]:
+        if '📎' not in line:
+            return None
+
+        expr = r'^\s*- \[.\].*📎\s+\[([^\[(]*)\]\((.*)\)'
+        match = re.match(expr, line)
+        return match[2]
 
     def mark(self):
         line = self.current_line
@@ -1281,6 +1292,20 @@ class UjiView(object):
 
     def fail_test(self):
         self._prefix_with("FAIL")
+
+    def _open_file(self, program):
+        filename = self._get_file(self.current_line)
+        if filename is not None:
+            filename = f'{self.directory}/{filename}'
+            subprocess.call([program, filename])
+
+    def view_file(self):
+        self._open_file(os.environ.get('$PAGER', 'less'))
+
+    def edit_file(self):
+        editor = os.environ.get('EDITOR')
+        if editor:
+           self._open_file(editor)
 
     def editor(self):
         editor = os.environ.get('EDITOR')
