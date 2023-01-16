@@ -1236,7 +1236,7 @@ class UjiView(object):
 
         # append the return code to the logs
         indent = len(match[1])
-        result_line = f'{" " * (indent)} - result code: {int(result)}\n'
+        result_line = f'{" " * (indent)}  - result code: {int(result)}\n'
 
         # check if the result was already given:
         res_match = re.match(f'{" " * (indent)} - result code:.*', self.lines[insert_offset])
