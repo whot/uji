@@ -203,6 +203,15 @@ test_system:
   tests:
     - kernel not tainted on boot
 
+# This is just for testing the 'multi' command
+test_filelist:
+  type: test
+  name: Record current file list
+  logs:
+    commands:
+      - run: ls -l
+        output: multi
+
 test_hotplug_libinput:
   type: test
   filter:
