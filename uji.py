@@ -915,7 +915,8 @@ class UjiView(object):
                            lambda m: f'[header]{m.group(2)}{" " * (80 - len(m.group(1)) - len(m.group(2)))}[/header]', l)
 
                 # checkboxes [ ], [x] or [X], must be escaped with one backslah (e.g. \[x]) to prevent rich from parsing it as markup
-                l = re.sub(r'^(\s*- )(\[[ xX]\] )(.*)', r'[checkbox]\1\\\2\3[/checkbox]', l)
+                l = re.sub(r'^(\s*- )(\[[xX]\] )(.*)', r'[checkbox_done]\1\\\2\3[/checkbox_done]', l)
+                l = re.sub(r'^(\s*- )(\[[ ]\] )(.*)', r'[checkbox]\1\\\2\3[/checkbox]', l)
 
             rendered.append(l)
 
