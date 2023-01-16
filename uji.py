@@ -836,6 +836,7 @@ class UjiView(object):
         self.error = None
         self.show_filename_enabled = True
         self.display_help = False
+        self.dirty = False  # true if we need to re-render everything
 
         keymap = (
             Keymapping('KEY_ESCAPE', 'quit/exit help', flags=[KeymappingFlags.ACTIVE_IN_HELP], func=self.exit),
@@ -966,7 +967,7 @@ class UjiView(object):
             self._update_cursor(self.view_offset)
         elif self.cursor_offset > self.view_offset + self.window.height:
             self._update_cursor(self.view_offset + self.window.height)
-        self.rerender()
+        self.dirty = True
 
     def _handle_input(self, c):
         try:
@@ -1003,7 +1004,7 @@ class UjiView(object):
     def exit(self):
         if self.display_help:
             self.display_help = False
-            self.rerender()
+            self.dirty = True
         else:
             self.quit()
 
@@ -1052,7 +1053,7 @@ class UjiView(object):
         line = re.sub(r'^(\s*)- \[ \](.*)', r'\1- [x]\2', line)
         self.current_line = line
         self.writeout()
-        self._redraw()
+        self.dirty = True
 
     def unmark(self):
         line = self.current_line
@@ -1062,7 +1063,7 @@ class UjiView(object):
         line = re.sub(r'^(\s*)- \[[xX]\](.*)', r'\1- [ ]\2', line)
         self.current_line = line
         self.writeout()
-        self._redraw()
+        self.dirty = True
 
     def toggle(self):
         line = self.current_line
@@ -1163,8 +1164,8 @@ class UjiView(object):
         if command_type == 'multi':
             self.lines, offset = self.remove_code_block_content(self.lines, self.cursor_offset)
             self.writeout()
-            self._redraw()
-            self._render()
+            self.rerender()
+            self._display()
 
 
         try:
@@ -1181,8 +1182,8 @@ class UjiView(object):
                         offset = self._insert(offset, line)
                         output.append(line)
                         self.writeout()
-                        self._redraw()
-                        self._render()
+                        self.rerender()
+                        self._display()
                         line = proc.stdout.readline()
                 else:
                     output.extend(proc.stdout.readlines())
@@ -1203,8 +1204,8 @@ class UjiView(object):
             for line in lines:
                 offset = self._insert(offset, line)
             self.writeout()
-            self._redraw()
-            self._render()
+            self.rerender()
+            self._display()
         output.extend(lines)
 
         # append the return code to the logs
@@ -1248,6 +1249,7 @@ class UjiView(object):
         else:
             return
 
+        self.dirty = True
         self.mark()
         self.next()
 
@@ -1279,7 +1281,7 @@ class UjiView(object):
         line = f'{md_checkbox}{pfmt(prefix)}{rest_of_line}\n'
         self.current_line = line
         self.writeout()
-        self._redraw()
+        self.dirty = True
         # Explicitly passing/failing/skipping means this test is done - manually untoggle if need be
         self.mark()
         self.next()
@@ -1314,15 +1316,15 @@ class UjiView(object):
 
         subprocess.call([editor, self.mdfile, f'+{self.cursor_offset + 1}'])
         self.lines = open(self.mdfile).readlines()
-        self.rerender()
+        self.dirty = True
 
     def show_filenames(self):
         self.show_filename_enabled = not self.show_filename_enabled
-        self.rerender()
+        self.dirty = True
 
     def show_help(self):
         self.display_help = not self.display_help
-        self.rerender()
+        self.dirty = True
 
     def writeout(self):
         with open(self.mdfile, 'w') as fd:
@@ -1338,21 +1340,35 @@ class UjiView(object):
 
         return rendered
 
-    def _redraw(self):
+    def _render_markdown_to_buffer(self):
+        '''
+        Renders the current markdown document into the line buffer, to be repainted later.
+        '''
         self._update_cursor(self.cursor_offset)
 
         # Note: this assumes that our rendering process never inserts or removes lines
         # Also - if the line is wider than the terminal, interesting things happen.
         # But we can't easily clip because all the ansi escape codes make our strings longer
         # than they are.
+
+        # FIXME: make this more efficient by keeping the rendered bits and only rendering the
+        # viewport
         rendered = self._render_markdown(self.lines)
         self.line_buffer = rendered[self.view_offset:self.view_offset + self.window.height]
 
-    def _redraw_help_screen(self):
+    def _render_help_to_buffer(self):
+        '''
+        Renders the help screen into the line buffer, to be repainted later.
+        '''
         rendered = self._draw_help_screen()
         self.line_buffer = rendered
 
-    def _render(self):
+    def _display(self):
+        '''
+        Displays the current line buffer to screen
+        '''
+        print(self.term.move_xy(0, 0)+ self.term.clear, end='', flush=True)
+
         cursor_prefix = ' ' * len(self.CURSOR)
         print(self.term.home, end='')
         for idx, line in enumerate(self.line_buffer[:-1]):
@@ -1371,15 +1387,11 @@ class UjiView(object):
 
         print(self.term.move_xy(0, statusline_idx) + statusline, end='', flush=True)
 
-    def _clear_screen(self):
-        print(self.term.move_xy(0, 0)+ self.term.clear, end='', flush=True)
-
     def rerender(self):
-        self._clear_screen()
         if self.display_help:
-            self._redraw_help_screen()
+            self._render_help_to_buffer()
         else:
-            self._redraw()
+            self._render_markdown_to_buffer()
 
     @property
     def statusline(self):
@@ -1412,12 +1424,15 @@ class UjiView(object):
             self.term = term
             with term.fullscreen(), term.cbreak(), term.hidden_cursor():
                 self.window = Dimension(term.width, term.height)
-                self._redraw()
-                self._render()
+                self.rerender()
+                self._display()
 
                 while not self.stop:
                     self._handle_input(term.inkey())
-                    self._render()
+                    if self.dirty:
+                        self.dirty = False
+                        self.rerender()
+                    self._display()
 
 
 def uji_setup(directory):
