@@ -847,6 +847,8 @@ class UjiView(object):
             Keymapping('KEY_DOWN', 'down', func=self.cursor_down),
             Keymapping('KEY_UP', 'down', func=self.cursor_up),
             Keymapping(' ', 'page down', func=self.page_down),
+            Keymapping('KEY_PGDOWN', 'page down', func=self.page_down),
+            Keymapping('KEY_PGUP', 'page down', func=self.page_up),
             Keymapping('n', 'next', func=self.next),
             Keymapping('p', 'previous', func=self.previous),
             Keymapping('r', 'run command', flags=[KeymappingFlags.ONLY_ON_CHECKBOX, KeymappingFlags.EXECUTE], func=self.execute_command),
@@ -1023,6 +1025,9 @@ class UjiView(object):
 
     def page_down(self):
         self._update_view(self.view_offset + self.window.height)
+
+    def page_up(self):
+        self._update_view(self.view_offset - self.window.height)
 
     def next(self):
         for idx, l in enumerate(self.lines[self.cursor_offset + 1:]):
