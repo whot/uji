@@ -22,9 +22,11 @@ def find_in_section(markdown: str, section: str, string: str) -> Optional[str]:
     prev_line = None
     in_section = False
     for line in markdown.split('\n'):
-        if prev_line is not None and prev_line == section and line == '-' * len(section):
+        if re.match(rf"^#*\s+{section}\s*$", line):  # # foo style header
             in_section = True
-        elif in_section and line == '':
+        elif prev_line is not None and prev_line == section and line == '-' * len(section):  # foo\n---\n style header
+            in_section = True
+        elif in_section and line == '' and prev_line is not None and not prev_line.startswith('#'):
             in_section = False
         elif in_section:
             if string in line:
@@ -62,10 +64,10 @@ def test_uji_tree(datadir):
         markdown = ''.join(open(md))
 
         # check for a few expected sections
-        assert 'Uji\n===\n' in markdown
-        assert 'actor1\n------\n' in markdown
-        assert 'actor2\n------\n' in markdown
-        assert 'Generic\n-------\n' in markdown
+        assert '# Uji\n' in markdown
+        assert '## actor1\n' in markdown
+        assert '## actor2\n' in markdown
+        assert '## Generic\n' in markdown
 
         # check for the tests to be distributed across the actors
         # correctly

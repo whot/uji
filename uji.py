@@ -389,12 +389,10 @@ class MarkdownFormatter(object):
         print(text, file=self.fd)
 
     def h1(self, text):
-        self.fprint(text)
-        self.fprint('=' * len(text))
+        self.fprint(f'# {text}\n')
 
     def h2(self, text):
-        self.fprint(text)
-        self.fprint('-' * len(text))
+        self.fprint(f'## {text}\n')
 
     def h3(self, text):
         self.fprint(text)
