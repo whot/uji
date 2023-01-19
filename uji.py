@@ -61,6 +61,10 @@ statusline = bold
 statusline_inactive = #dddddd
 statusline_active = black
 
+pass = #56a971
+fail = #a9568f
+skip = #a99b56
+
 info = dim cyan
 warning = magenta
 danger = bold red
@@ -976,6 +980,10 @@ class UjiView(object):
                 filler = " " * (80 - len(l))
                 l = f" {l}{filler}"
             else:
+                l = re.sub(r"(\*\*PASS\*\*)", r"[pass]\1[/pass]", l)
+                l = re.sub(r"(\*\*FAIL\*\*)", r"[fail]\1[/fail]", l)
+                l = re.sub(r"(\*\*SKIP\*\*)", r"[skip]\1[/skip]", l)
+
                 # bold
                 l = re.sub(r"\*\*([^*]*)\*\*", rf"[bold]\1[/bold]", l)
                 # italic
