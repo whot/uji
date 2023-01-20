@@ -1146,7 +1146,7 @@ class UjiView(object):
             )
         ):
             if self.is_header(current, next):
-                self.cursor_offset = self.cursor_offset + 1 + idx
+                self._update_cursor(self.cursor_offset + 1 + idx)
                 break
 
     def prev_section(self):
@@ -1157,7 +1157,7 @@ class UjiView(object):
             )
         ):
             if self.is_header(current, next):
-                self.cursor_offset = self.cursor_offset - idx - 2
+                self._update_cursor(self.cursor_offset - idx - 2)
                 break
 
     def is_header(self, current, next):
