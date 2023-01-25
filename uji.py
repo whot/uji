@@ -1664,7 +1664,9 @@ def uji_check(directory):
         return
 
     try:
-        subprocess.check_output([os.fspath(precheck)], stderr=subprocess.STDOUT)
+        subprocess.check_output(
+            [os.fspath(precheck.absolute())], stderr=subprocess.STDOUT
+        )
     except subprocess.CalledProcessError as e:
         logger.critical(f"uji-check failed with exit code {e.returncode}. Aborting.")
         if e.output:
