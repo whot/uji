@@ -1720,7 +1720,7 @@ def new(template, directory):
 @uji.command()
 @click.argument(
     "directory",
-    type=click.Path(file_okay=False, dir_okay=True, exists=True),
+    type=click.Path(file_okay=False, dir_okay=True, exists=False),
     required=False,
 )
 def view(directory):
@@ -1729,6 +1729,10 @@ def view(directory):
 
     If no directory is given, default to the 'uji-latest' directory
     symlink created by uji new or the most recently created directory.
+
+    If the given directory does not exist, it is assumed to be a
+    substring and resolves to the most recently created directory in
+    $PWD that matches this substring.
     """
     if directory is None:
         if Path("uji-latest").exists():
@@ -1744,6 +1748,15 @@ def view(directory):
                 click.echo("Unable to find a matching uji directory")
                 sys.exit(1)
             directory = dirs[0]
+    elif not Path(directory).exists():
+        matches = list(Path(".").glob(f"*{directory}*/"))
+        matches = sorted(matches, key=lambda dir: dir.stat().st_atime, reverse=True)
+        if not matches:
+            click.echo("Unable to find a matching uji directory")
+            sys.exit(1)
+
+        directory = matches[0]
+        logger.debug(f"Resolved to {directory}")
 
     uji_check(directory)
     UjiView(directory).run()
