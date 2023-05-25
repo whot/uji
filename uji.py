@@ -1364,6 +1364,8 @@ class UjiView(object):
         else:
             insert_offset = self._insert(insert_offset, result_line)
 
+        self.dirty = True
+
         if command_type == "exit_code":
             # no need to do anything more for exit code
             pass
