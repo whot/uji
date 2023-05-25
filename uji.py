@@ -48,8 +48,8 @@ from copy import deepcopy
 from pathlib import Path
 from textwrap import dedent
 
-# Stylesheet for uji view
-style = """
+# Stylesheets for uji view
+clear_theme = """
 [styles]
 header = #9a56a9 on #dddddd
 filename = #568ea9 underline
@@ -71,7 +71,29 @@ danger = bold red
 error = red
 """
 
-theme = rich.theme.Theme.from_file(io.StringIO(style))
+dark_theme = """
+[styles]
+header = #AD7FA8 on #555555
+filename = #568ea9 underline
+inline = #a97156
+checkbox = #65a956
+checkbox_done = #3F5907
+code = #C17777 on #303030
+statusline = bold
+statusline_inactive = black
+statusline_active = #dddddd
+
+pass = #56a971
+fail = #a9568f
+skip = #a99b56
+
+info = dim cyan
+warning = magenta
+danger = bold red
+error = red
+"""
+
+theme = rich.theme.Theme.from_file(io.StringIO(clear_theme))
 logger = logging.getLogger("uji")
 logger.addHandler(rich.logging.RichHandler())
 logger.setLevel(logging.ERROR)
@@ -1730,7 +1752,13 @@ def new(template, directory):
     type=click.Path(file_okay=False, dir_okay=True, exists=False),
     required=False,
 )
-def view(directory):
+@click.option(
+    "--theme",
+    "user_theme",
+    type=click.Choice(["clear", "dark"], case_sensitive=False),
+    default="clear",
+)
+def view(directory, user_theme):
     """
     View and update test logs in DIRECTORY
 
@@ -1741,6 +1769,10 @@ def view(directory):
     substring and resolves to the most recently created directory in
     $PWD that matches this substring.
     """
+    global theme
+    if user_theme == "dark":
+        theme = rich.theme.Theme.from_file(io.StringIO(dark_theme))
+
     if directory is None:
         if Path("uji-latest").exists():
             directory = "uji-latest"
