@@ -1033,7 +1033,12 @@ class UjiView(object):
                 rendered[idx + 1] = f"[header]{r2}{filler}[/header]"
 
         with self.console.capture() as capture:
-            self.console.print("\n".join(rendered))
+            self.console.print(
+                "\n".join(rendered),
+                width=self.console.width - 4,
+                overflow="ellipsis",
+                soft_wrap=True,
+            )
         rendered = capture.get().split("\n")
 
         return rendered
