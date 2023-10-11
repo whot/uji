@@ -943,6 +943,12 @@ class UjiView(object):
                 flags=[KeymappingFlags.ONLY_ON_FILE],
                 func=self.edit_file,
             ),
+            Keymapping(
+                "O",
+                "open file",
+                flags=[KeymappingFlags.ONLY_ON_FILE],
+                func=self.open_file,
+            ),
         )
         self.keymap: Dict[str, Keymapping] = {k.key: k for k in keymap}
 
@@ -1465,6 +1471,9 @@ class UjiView(object):
     def show_filenames(self):
         self.show_filename_enabled = not self.show_filename_enabled
         self.dirty = True
+
+    def open_file(self):
+        self._open_file("xdg-open")
 
     def show_help(self):
         self.display_help = not self.display_help
